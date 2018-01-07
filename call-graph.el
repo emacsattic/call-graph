@@ -39,6 +39,7 @@
 ;;; Code:
 
 (require 'map)
+(require 'cg-utils)
 
 (defcustom cg-max-depth 1
   "The maximum depth of call graph."
