@@ -82,7 +82,7 @@
     (split-string command-out-put "\n" t)))
 
 
-(defun cg-walk-tree-in-bfs-order (root, func)
+(defun cg-walk-tree-in-bfs-order (root func)
   "wallk tree in breadth first search order."
   (let ((queue (make-queue))
         (current-node nil))
