@@ -36,12 +36,25 @@
 ;;
 ;;     (require 'call-graph)
 
+;;; Usage:
+
+;; (call-graph func)
+;; (test-it)
+;; hierarchy will be  generated.
+
 ;;; Code:
 
+(require 'seq)
 (require 'map)
-(require 'cg-utils)
 
-(defcustom cg-max-depth 1
+(require 'hierarchy)
+;; (require 'cg-utils)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helpers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defcustom cg-max-depth 2
   "The maximum depth of call graph."
   :type 'integer)
 
@@ -143,10 +156,36 @@
                   (queue-put queue new-sub-node))))))))))
 
 
-(defun test-it()
-  (interactive)
-  (dolist (line (cg-find-references "setRange"))
-    (message (get-function-caller line))))
+
+
+(defun call-graph-display ()
+  (let ((first-time t))
+    (cg-walk-tree-in-bfs-order
+     cg-internal-tree
+     (lambda (key value)
+       (let ((parent (intern key))
+             (children nil))
+         (when (mapp value)
+           (map-delete value cg-key-to-depth)
+           (setq children (seq-map (lambda (elt) (intern elt)) (map-keys value)))
+           (seq-doseq (child children)
+             (when first-time
+               (setq first-time nil)
+               (hierarchy--add-relation tmp parent nil 'identity))
+             (hierarchy--add-relation tmp child parent 'identity)
+             (push
+              (concat "insert childe " (symbol-name child)
+                      " under parent " (symbol-name parent)) log))))))))
+
+(defun test-it ()
+  (setq tmp (hierarchy-new))
+  (setq log '())
+
+  (call-graph-display)
+  (switch-to-buffer
+   (hierarchy-tree-display
+    tmp
+    (lambda (item _) (insert (symbol-name item))))))
 
 
 (provide 'call-graph)
