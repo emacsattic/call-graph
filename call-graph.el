@@ -38,7 +38,7 @@
 
 ;;; Usage:
 
-;; (call-graph func)
+;; (call-graph function)
 ;; (test-it)
 ;; hierarchy will be  generated.
 
@@ -87,15 +87,15 @@
         (nth 1 tmpVal)
       (nth 0 tmpVal))))
 
-(defun cg-find-references (func)
+(defun cg-find-references (function)
   (interactive "S")
   (let* ((command
-          (format "global -a --result=grep -r %s | grep .cpp:" func))
+          (format "global -a --result=grep -r %s | grep .cpp:" function))
          (command-out-put (shell-command-to-string command)))
     (split-string command-out-put "\n" t)))
 
 
-(defun cg-walk-tree-in-bfs-order (root func)
+(defun cg-walk-tree-in-bfs-order (root function)
   "wallk tree in breadth first search order."
   (let ((queue (make-queue))
         (current-node nil))
@@ -107,14 +107,14 @@
         (let ((key (car map-pair))
               (value (cdr map-pair)))
 
-          (funcall func key value)
+          (funcall function key value)
           (when (mapp value)
             (queue-put queue value)))))))
 
 
 ;;;###autoload
-(defun call-graph (func)
-  "Generate a call-graph for the function func."
+(defun call-graph (function)
+  "Generate a call-graph for the function."
   (interactive "S")
   (let* ((queue (make-queue))
          (root cg-internal-tree)
@@ -124,7 +124,7 @@
     ;; clear history data
     (clrhash root)
 
-    (map-put root (symbol-name func) (make-new-hash-table))
+    (map-put root (symbol-name function) (make-new-hash-table))
     (map-put root cg-key-to-depth 0)
     (queue-put queue root)
 
@@ -156,18 +156,16 @@
                   (queue-put queue new-sub-node))))))))))
 
 
-
-
 (defun call-graph-display ()
   (let ((first-time t))
     (cg-walk-tree-in-bfs-order
      cg-internal-tree
-     (lambda (key value)
+     (λ (key value)
        (let ((parent (intern key))
              (children nil))
          (when (mapp value)
            (map-delete value cg-key-to-depth)
-           (setq children (seq-map (lambda (elt) (intern elt)) (map-keys value)))
+           (setq children (seq-map (λ (elt) (intern elt)) (map-keys value)))
            (seq-doseq (child children)
              (when first-time
                (setq first-time nil)
@@ -185,7 +183,7 @@
   (switch-to-buffer
    (hierarchy-tree-display
     tmp
-    (lambda (item _) (insert (symbol-name item))))))
+    (λ (item _) (insert (symbol-name item))))))
 
 
 (provide 'call-graph)
