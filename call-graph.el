@@ -183,7 +183,7 @@
   (switch-to-buffer
    (hierarchy-tree-display
     tmp
-    (λ (item _) (insert (symbol-name item)))))
+    (lambda (item _) (insert (symbol-name item)))))
 
   (dolist (rec (reverse log))
     (message rec)))
