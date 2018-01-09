@@ -103,7 +103,7 @@
     (queue-put queue root)
     (while (not (queue-empty-p queue))
       (setq current-node (queue-get queue))
-      (dolist (map-pair (map-pairs current-node))
+      (seq-doseq (map-pair (map-pairs current-node))
         (let ((key (car map-pair))
               (value (cdr map-pair)))
 
@@ -136,7 +136,7 @@
         (when (> (map-elt current-node cg-key-to-depth 0) cg-max-depth)
           (throw 'exceed-max-depth t))
 
-        (dolist (map-pair (map-pairs current-node))
+        (seq-doseq (map-pair (map-pairs current-node))
           (let ((key (car map-pair))
                 (sub-node (cdr map-pair))
                 (caller nil)
@@ -146,7 +146,7 @@
               (map-put sub-node cg-key-to-depth (1+ (map-elt current-node cg-key-to-depth)))
               (queue-put queue sub-node)
 
-              (dolist (reference (cg-find-references key))
+              (seq-doseq (reference (cg-find-references key))
                 (when (not
                        (member (setq caller (cg-find-caller reference)) caller-visited))
                   (message caller)
@@ -185,7 +185,7 @@
     tmp
     (lambda (item _) (insert (symbol-name item)))))
 
-  (dolist (rec (reverse log))
+  (seq-doseq (rec (reverse log))
     (message rec)))
 
 
