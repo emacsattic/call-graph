@@ -160,12 +160,12 @@
   (let ((first-time t))
     (cg-walk-tree-in-bfs-order
      cg-internal-tree
-     (λ (key value)
+     (lambda (key value)
        (let ((parent (intern key))
              (children nil))
          (when (mapp value)
            (map-delete value cg-key-to-depth)
-           (setq children (seq-map (λ (elt) (intern elt)) (map-keys value)))
+           (setq children (seq-map (lambda (elt) (intern elt)) (map-keys value)))
            (seq-doseq (child children)
              (when first-time
                (setq first-time nil)
@@ -183,7 +183,7 @@
   (switch-to-buffer
    (hierarchy-tree-display
     tmp
-    (λ (item _) (insert (symbol-name item))))))
+    (lambda (item _) (insert (symbol-name item))))))
 
 
 (provide 'call-graph)
