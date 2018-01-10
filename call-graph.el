@@ -118,10 +118,10 @@ ROOT should be a hash-table with its values as hash-table too."
   "Generate call-graph for function at point."
   (interactive)
   (save-excursion
-    (let ((function (symbol-at-point))
-          (root call-graph-internal-tree)
-          (current-node nil)
-          (caller-visited '()))
+    (let* ((function (symbol-at-point))
+           (caller-visited (list (symbol-name function)))
+           (root call-graph-internal-tree)
+           (current-node nil))
       (clrhash root)    ;; clear history data
       (when function
         (map-put root function (make-new-hash-table))
@@ -129,7 +129,7 @@ ROOT should be a hash-table with its values as hash-table too."
         (catch 'exceed-max-depth
           (call-graph--walk-tree-in-bfs-order
            root
-           (lambda (key value current-node)
+           (λ (key value current-node)
              (let ((caller nil)
                    (sub-node nil))
                (when (> (map-elt current-node call-graph-key-to-depth 0) call-graph-max-depth)
