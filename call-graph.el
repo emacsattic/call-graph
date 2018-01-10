@@ -129,7 +129,7 @@ ROOT should be a hash-table with its values as hash-table too."
         (catch 'exceed-max-depth
           (call-graph--walk-tree-in-bfs-order
            root
-           (λ (key value current-node)
+           (lambda (key value current-node)
              (let ((caller nil)
                    (sub-node nil))
                (when (> (map-elt current-node call-graph-key-to-depth 0) call-graph-max-depth)
