@@ -68,6 +68,10 @@
 (defvar call-graph-internal-tree (make-new-hash-table)
   "The internal data of call graph.")
 
+(defcustom call-graph-termination-list '("main")
+  "Call-graph stops when seeing symbols from this list."
+  :type 'list)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,18 +122,19 @@ ROOT should be a hash-table with its values as hash-table too."
   "Generate call-graph for function at point."
   (interactive)
   (save-excursion
-    (let* ((function (symbol-at-point))
-           (caller-visited (list (symbol-name function)))
-           (root call-graph-internal-tree)
-           (current-node nil))
-      (clrhash root)    ;; clear history data
+    (let ((function (symbol-at-point))
+          (caller-visited call-graph-termination-list)
+          (root call-graph-internal-tree)
+          (current-node nil))
       (when function
+        (clrhash root)    ;; clear history data
+        (push (symbol-name function) caller-visited)
         (map-put root function (make-new-hash-table))
         (map-put root call-graph-key-to-depth 0)
         (catch 'exceed-max-depth
           (call-graph--walk-tree-in-bfs-order
            root
-           (lambda (key value current-node)
+           (λ (key value current-node)
              (let ((caller nil)
                    (sub-node nil))
                (when (> (map-elt current-node call-graph-key-to-depth 0) call-graph-max-depth)
