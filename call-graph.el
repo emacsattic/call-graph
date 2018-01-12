@@ -72,29 +72,37 @@
   "Call-graph stops when seeing symbols from this list."
   :type 'list)
 
+(defvar call-graph--current-buffer (current-buffer)
+  "The current buffer on which call-graph operate."
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun call-graph--find-caller (reference)
   "Given a REFERENCE, return the caller of this reference."
-  (let* ((tmpVal (split-string reference ":"))
-         (fileName (seq-elt tmpVal 0))
-         (lineNb (seq-elt tmpVal 1))
-         caller)
-    (find-file fileName)
-    (goto-line (string-to-number lineNb))
-    (setq caller (which-function))
-    (kill-this-buffer)
-    (setq tmpVal (split-string caller "::"))
-    (if (> (seq-length tmpVal) 1)
-        (seq-elt tmpVal 1)
-      (seq-elt tmpVal 0))))
+  (when-let ((tmpVal (split-string reference ":"))
+             (fileName (seq-elt tmpVal 0))
+             (is-valid-file (file-exists-p fileName))
+             (lineNb (string-to-number (seq-elt tmpVal 1)))
+             (is-valid-Nb (integerp lineNb)))
+    (let (caller)
+      (find-file fileName)
+      (goto-line lineNb)
+      (setq caller (which-function))
+      (unless (eq (current-buffer)
+                  call-graph--current-buffer)
+        (kill-this-buffer))
+      (setq tmpVal (split-string caller "::"))
+      (if (> (seq-length tmpVal) 1)
+          (seq-elt tmpVal 1)
+        (seq-elt tmpVal 0)))))
 
 (defun call-graph--find-references (function)
   "Given a FUNCTION, return all references of this function."
   (let* ((command
-          (format "global -a --result=grep -r %s | grep .cpp:" function))
+          (concat (format "global -a --result=grep -r %s" function) " | grep -E \"\\.(cpp|cc):\""))
          (command-out-put (shell-command-to-string command)))
     (split-string command-out-put "\n" t)))
 
@@ -127,6 +135,7 @@ ROOT should be a hash-table with its values as hash-table too."
             (root call-graph-internal-tree)
             (current-node nil))
         (clrhash root)    ;; clear history data
+        (setq call-graph--current-buffer (current-buffer))
         (push (symbol-name function) caller-visited)
         (map-put root function (make-new-hash-table))
         (map-put root call-graph-key-to-depth 0)
