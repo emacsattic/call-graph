@@ -182,7 +182,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     (switch-to-buffer-other-window
      (hierarchy-tree-display
       hierarchy
-      (λ (tree-item _) (insert (symbol-name tree-item)))
+      (lambda (tree-item _) (insert (symbol-name tree-item)))
       (call-graph--get-buffer)))
     (seq-doseq (rec (reverse log)) (message rec))))
 
