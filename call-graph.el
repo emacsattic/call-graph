@@ -165,7 +165,7 @@ ITEM is parent of root, ROOT should be a hash-table."
            (push
             (concat "insert childe " (symbol-name child)
                     " under parent " (symbol-name parent)) log)))))
-    (switch-to-buffer
+    (switch-to-buffer-other-window
      (hierarchy-tree-display
       hierarchy
       (lambda (tree-item _) (insert (symbol-name tree-item)))))
@@ -189,7 +189,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (setq tmp (hierarchy-new)
         log '())
   (call-graph-display)
-  (switch-to-buffer
+  (switch-to-buffer-other-window
    (hierarchy-tree-display
     tmp
     (lambda (item _) (insert (symbol-name item)))))
