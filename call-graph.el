@@ -76,9 +76,23 @@
   "The current buffer on which call-graph operate."
   )
 
+(defcustom call-graph-uniqe-buffer t
+  "Non-nil means only one buffer will be used for call-graph."
+  :type 'boolean
+  ;; :require 'saveplace
+  ;; :group 'save-place
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun call-graph--get-buffer ()
+  "Generate call-graph buffer."
+  (let ((buffer-name "*call-graph*"))
+    (if call-graph-uniqe-buffer
+        (get-buffer-create buffer-name)
+      (generate-new-buffer buffer-name))))
 
 (defun call-graph--find-caller (reference)
   "Given a REFERENCE, return the caller of this reference."
@@ -168,7 +182,8 @@ ITEM is parent of root, ROOT should be a hash-table."
     (switch-to-buffer-other-window
      (hierarchy-tree-display
       hierarchy
-      (lambda (tree-item _) (insert (symbol-name tree-item)))))
+      (λ (tree-item _) (insert (symbol-name tree-item)))
+      (call-graph--get-buffer)))
     (seq-doseq (rec (reverse log)) (message rec))))
 
 ;;;###autoload
