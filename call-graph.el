@@ -136,7 +136,7 @@ ITEM is parent of root, ROOT should be a hash-table."
       (catch 'exceed-max-depth
         (call-graph--walk-tree-in-bfs-order
          item root
-         (λ (parent node)
+         (lambda (parent node)
            (let (caller sub-node (depth (map-elt node call-graph-key-to-depth 0)))
              (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
              (when (mapp node)
@@ -155,7 +155,7 @@ ITEM is parent of root, ROOT should be a hash-table."
         (hierarchy (hierarchy-new)))
     (call-graph--walk-tree-in-bfs-order
      item root
-     (λ (parent node)
+     (lambda (parent node)
        (when (mapp node)
          (map-delete node call-graph-key-to-depth)
          (seq-doseq (child (map-keys node))
@@ -168,7 +168,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     (switch-to-buffer
      (hierarchy-tree-display
       hierarchy
-      (λ (tree-item _) (insert (symbol-name tree-item)))))
+      (lambda (tree-item _) (insert (symbol-name tree-item)))))
     (seq-doseq (rec (reverse log)) (message rec))))
 
 ;;;###autoload
