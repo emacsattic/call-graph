@@ -50,8 +50,11 @@
 ;; for user-provided equality definition is desired but not yet implemented.
 
 ;;; Attention:
-;;; This is a modified version for myself based on hierarchy.el
-;;; See original version here => https://github.com/DamienCassou/hierarchy
+;;  This is a modified version for myself based on hierarchy.el
+;;  See original version here => https://github.com/DamienCassou/hierarchy
+
+;;; Customized changes
+;;  All nodes are created in expanded state.
 
 ;;; Code:
 
@@ -501,7 +504,8 @@ node label."
                         (widget-convert
                          'tree-widget
                          :tag (hierarchy-labelfn-to-string labelfn item indent)
-                         :args children))
+                         :args children
+                         :open t))
                       hierarchy))
 
 (defun hierarchy-tree-display (hierarchy labelfn &optional buffer)
