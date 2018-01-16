@@ -106,34 +106,17 @@
          (command-out-put (shell-command-to-string command)))
     (split-string command-out-put "\n" t)))
 
-(defun call-graph--walk-tree-in-bfs-order (root function)
-  "Wallk tree in BFS order, apply FUNCTION for each node.
-ROOT should be a hash-table with its values as hash-table too."
+(defun call-graph--walk-tree-in-bfs-order (item node func)
+  "Wallk tree in BFS order, apply FUNC for each (item . node).
+ITEM is parent of NODE, NODE should be a hash-table."
   (let ((queue (make-queue))
-        (current-node nil))
-    (queue-put queue root)
-    (while (not (queue-empty-p queue))
-      (setq current-node (queue-get queue))
-      (seq-doseq (map-pair (map-pairs current-node))
-        (let ((key (car map-pair))
-              (value (cdr map-pair)))
-          (funcall function key value current-node)
-          (when (mapp value)
-            (queue-put queue value)))))))
-
-(defun call-graph--walk-tree-in-bfs-order-v2 (parent-name node function)
-  "Wallk tree in BFS order, apply FUNCTION for each node.
-NODE should be a hash-table."
-  (let ((queue (make-queue))
-        (queue-elt nil)
-        (current-parent-name nil)
-        (current-node nil))
-    (queue-put queue (cons parent-name node))
+        queue-elt current-item current-node)
+    (queue-put queue (cons item node))
     (while (not (queue-empty-p queue))
       (setq queue-elt (queue-get queue)
-            current-parent-name (car queue-elt)
+            current-item (car queue-elt)
             current-node (cdr queue-elt))
-      (funcall function current-parent-name current-node)
+      (funcall func current-item current-node)
       (seq-doseq (map-pair (map-pairs current-node))
         (when (mapp (cdr map-pair))
           (queue-put queue map-pair))))))
@@ -142,91 +125,65 @@ NODE should be a hash-table."
 ;; Core Function
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun call-graph--create (item root)
+  "Construct call-graph tree.
+ITEM is parent of root, ROOT should be a hash-table."
+  (when (and item root)
+    (let ((caller-visited call-graph-termination-list))
+      (setq call-graph--current-buffer (current-buffer))
+      (push (symbol-name item) caller-visited)
+      (map-put root call-graph-key-to-depth 0)
+      (catch 'exceed-max-depth
+        (call-graph--walk-tree-in-bfs-order
+         item root
+         (λ (parent node)
+           (let (caller sub-node (depth (map-elt node call-graph-key-to-depth 0)))
+             (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
+             (when (mapp node)
+               (seq-doseq (reference (call-graph--find-references parent))
+                 (when (not (member (setq caller (call-graph--find-caller reference)) caller-visited))
+                   (message caller)
+                   (push caller caller-visited)
+                   (setq sub-node (make-new-hash-table))
+                   (map-put sub-node call-graph-key-to-depth (1+ depth))
+                   (map-put node (intern caller) sub-node)))))))))))
+
+(defun call-graph--display (item root)
+  "Prepare data for display.
+ITEM is parent of root, ROOT should be a hash-table."
+  (let ((first-time t) (log (list))
+        (hierarchy (hierarchy-new)))
+    (call-graph--walk-tree-in-bfs-order
+     item root
+     (λ (parent node)
+       (when (mapp node)
+         (map-delete node call-graph-key-to-depth)
+         (seq-doseq (child (map-keys node))
+           (when first-time (setq first-time nil)
+                 (hierarchy--add-relation hierarchy parent nil 'identity))
+           (hierarchy--add-relation hierarchy child parent 'identity)
+           (push
+            (concat "insert childe " (symbol-name child)
+                    " under parent " (symbol-name parent)) log)))))
+    (switch-to-buffer
+     (hierarchy-tree-display
+      hierarchy
+      (λ (tree-item _) (insert (symbol-name tree-item)))))
+    (seq-doseq (rec (reverse log)) (message rec))))
+
 ;;;###autoload
 (defun call-graph ()
-  "Generate call-graph for target at point."
+  "Construct call-graph tree."
   (interactive)
   (save-excursion
-    (when-let ((target (symbol-at-point)))
-      (let ((caller-visited call-graph-termination-list)
-            (root call-graph-internal-tree)
-            (current-node nil))
-        (clrhash root)    ;; clear history data
-        (setq call-graph--current-buffer (current-buffer))
-        (push (symbol-name target) caller-visited)
-        (map-put root target (make-new-hash-table))
-        (map-put root call-graph-key-to-depth 0)
-        (catch 'exceed-max-depth
-          (call-graph--walk-tree-in-bfs-order
-           root
-           (lambda (key value current-node)
-             (let ((caller nil)
-                   (sub-node nil))
-               (when (> (map-elt current-node call-graph-key-to-depth 0) call-graph-max-depth)
-                 (throw 'exceed-max-depth t))
-               (when (mapp value)
-                 (map-put value call-graph-key-to-depth (1+ (map-elt current-node call-graph-key-to-depth)))
-                 (seq-doseq (reference (call-graph--find-references key))
-                   (when (not (member (setq caller (call-graph--find-caller reference)) caller-visited))
-                     (message caller)
-                     (push caller caller-visited)
-                     (setq sub-node (make-new-hash-table))
-                     (map-put value (intern caller) sub-node))))))))))))
-
-(defun call-graph-v2 ()
-  "Generate call-graph for target at point."
-  (interactive)
-  (save-excursion
-    (when-let ((target (symbol-at-point)))
-      (let ((caller-visited call-graph-termination-list)
-            ;; (root (make-new-hash-table))
-            (root call-graph-internal-tree)
-            )
-        (clrhash root)    ;; clear history data
-        (setq call-graph--current-buffer (current-buffer))
-        (push (symbol-name target) caller-visited)
-        (map-put root call-graph-key-to-depth 0)
-        (catch 'exceed-max-depth
-          (call-graph--walk-tree-in-bfs-order-v2
-           target
-           root
-           (lambda (key node)
-             (let ((caller nil)
-                   (sub-node nil))
-               (when (> (map-elt node call-graph-key-to-depth 0) call-graph-max-depth)
-                 (throw 'exceed-max-depth t))
-               (when (mapp node)
-                 (seq-doseq (reference (call-graph--find-references key))
-                   (when (not (member (setq caller (call-graph--find-caller reference)) caller-visited))
-                     (message caller)
-                     (push caller caller-visited)
-                     (setq sub-node (make-new-hash-table))
-                     (map-put sub-node call-graph-key-to-depth (1+ (map-elt node call-graph-key-to-depth)))
-                     (map-put node (intern caller) sub-node))))))))))))
-
+    (when-let ((target (symbol-at-point))
+               (root (make-new-hash-table)))
+      (call-graph--create target root)
+      (call-graph--display target root))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun call-graph-display ()
-  (let ((first-time t))
-    (call-graph--walk-tree-in-bfs-order
-     call-graph-internal-tree
-     (lambda (key value _)
-       (let ((parent key)
-             (children nil))
-         (when (mapp value)
-           (map-delete value call-graph-key-to-depth)
-           (setq children  (map-keys value))
-           (seq-doseq (child children)
-             (when first-time
-               (setq first-time nil)
-               (hierarchy--add-relation tmp parent nil 'identity))
-             (hierarchy--add-relation tmp child parent 'identity)
-             (push
-              (concat "insert childe " (symbol-name child)
-                      " under parent " (symbol-name parent)) log))))))))
 
 (defun test-it ()
   (setq tmp (hierarchy-new)
