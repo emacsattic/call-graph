@@ -76,7 +76,7 @@
   "The current buffer on which call-graph operate."
   )
 
-(defcustom call-graph-uniqe-buffer t
+(defcustom call-graph-unique-buffer t
   "Non-nil means only one buffer will be used for call-graph."
   :type 'boolean
   ;; :require 'saveplace
@@ -90,7 +90,7 @@
 (defun call-graph--get-buffer ()
   "Generate call-graph buffer."
   (let ((buffer-name "*call-graph*"))
-    (if call-graph-uniqe-buffer
+    (if call-graph-unique-buffer
         (get-buffer-create buffer-name)
       (generate-new-buffer buffer-name))))
 
