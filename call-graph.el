@@ -31,16 +31,15 @@
 
 ;;; Install:
 
-;; Put this file into load-path'ed directory, and byte compile it if
+;; Put this file into load-path directory, and byte compile it if
 ;; desired. And put the following expression into your ~/.emacs.
 ;;
 ;;     (require 'call-graph)
 
 ;;; Usage:
 
-;; (call-graph function)
-;; (test-it)
-;; hierarchy will be  generated.
+;; "C-c g" => (call-graph)
+;; *call-graph* will be  generated.
 
 ;;; Code:
 
@@ -72,10 +71,6 @@
   "Call-graph stops when seeing symbols from this list."
   :type 'list)
 
-(defvar call-graph--current-buffer (current-buffer)
-  "The current buffer on which call-graph operate."
-  )
-
 (defcustom call-graph-unique-buffer t
   "Non-nil means only one buffer will be used for call-graph."
   :type 'boolean
@@ -102,12 +97,14 @@
              (lineNb (string-to-number (seq-elt tmpVal 1)))
              (is-valid-Nb (integerp lineNb)))
     (let (caller)
-      (find-file fileName)
-      (goto-line lineNb)
-      (setq caller (which-function))
-      (unless (eq (current-buffer)
-                  call-graph--current-buffer)
-        (kill-this-buffer))
+      (with-temp-buffer
+        (insert-file-contents-literally fileName)
+        ;; TODO: leave only hooks on which 'which-function-mode depends
+        ;; (set (make-local-variable 'c++-mode-hook) nil)
+        (c++-mode)
+        (which-function-mode t)
+        (goto-line lineNb)
+        (setq caller (which-function)))
       (setq tmpVal (split-string caller "::"))
       (if (> (seq-length tmpVal) 1)
           (seq-elt tmpVal 1)
@@ -144,7 +141,6 @@ ITEM is parent of NODE, NODE should be a hash-table."
 ITEM is parent of root, ROOT should be a hash-table."
   (when (and item root)
     (let ((caller-visited call-graph-termination-list))
-      (setq call-graph--current-buffer (current-buffer))
       (push (symbol-name item) caller-visited)
       (map-put root call-graph-key-to-depth 0)
       (catch 'exceed-max-depth
@@ -200,16 +196,7 @@ ITEM is parent of root, ROOT should be a hash-table."
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun test-it ()
-  (setq tmp (hierarchy-new)
-        log '())
-  (call-graph-display)
-  (switch-to-buffer-other-window
-   (hierarchy-tree-display
-    tmp
-    (lambda (item _) (insert (symbol-name item)))))
-  (seq-doseq (rec (reverse log))
-    (message rec)))
+(global-set-key (kbd "C-c g") 'call-graph)
 
 
 (provide 'call-graph)
