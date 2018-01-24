@@ -60,12 +60,15 @@
 (defconst call-graph-key-to-depth "*current-depth*"
   "The key to get current depth of call graph.")
 
+(defconst call-graph-key-to-caller-location "*caller-location*"
+  "The key to get caller location.")
+
 ;; use hash-table as the building blocks for tree
 (defun make-new-hash-table ()
   (make-hash-table :test 'equal))
 
-(defvar call-graph-internal-tree (make-new-hash-table)
-  "The internal data of call graph.")
+(defvar call-graph-internal-cache (make-new-hash-table)
+  "The internal cache of call graph.")
 
 (defcustom call-graph-termination-list '("main")
   "Call-graph stops when seeing symbols from this list."
@@ -93,10 +96,12 @@
   "Given a REFERENCE, return the caller of this reference."
   (when-let ((tmpVal (split-string reference ":"))
              (fileName (seq-elt tmpVal 0))
+             (lineNbStr (seq-elt tmpVal 1))
+             (lineNb (string-to-number lineNbStr))
              (is-valid-file (file-exists-p fileName))
-             (lineNb (string-to-number (seq-elt tmpVal 1)))
              (is-valid-Nb (integerp lineNb)))
-    (let (caller)
+    (let ((location (concat fileName ":" lineNbStr))
+          caller)
       (with-temp-buffer
         (insert-file-contents-literally fileName)
         ;; TODO: leave only hooks on which 'which-function-mode depends
@@ -107,8 +112,8 @@
         (setq caller (which-function)))
       (setq tmpVal (split-string caller "::"))
       (if (> (seq-length tmpVal) 1)
-          (seq-elt tmpVal 1)
-        (seq-elt tmpVal 0)))))
+          (cons (seq-elt tmpVal 1) location)
+        (cons (seq-elt tmpVal 0) location)))))
 
 (defun call-graph--find-references (function)
   "Given a FUNCTION, return all references of this function."
@@ -129,7 +134,7 @@ ITEM is parent of NODE, NODE should be a hash-table."
             current-node (cdr queue-elt))
       (funcall func current-item current-node)
       (seq-doseq (map-pair (map-pairs current-node))
-        (when (mapp (cdr map-pair))
+        (when (hash-table-p (cdr map-pair))
           (queue-put queue map-pair))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,20 +148,42 @@ ITEM is parent of root, ROOT should be a hash-table."
     (let ((caller-visited call-graph-termination-list))
       (push (symbol-name item) caller-visited)
       (map-put root call-graph-key-to-depth 0)
+      ;; (map-put root call-graph-key-to-caller-location location)
+      (map-put call-graph-internal-cache (symbol-name item) root)
       (catch 'exceed-max-depth
         (call-graph--walk-tree-in-bfs-order
          item root
          (lambda (parent node)
-           (let (caller sub-node (depth (map-elt node call-graph-key-to-depth 0)))
-             (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
-             (when (mapp node)
-               (seq-doseq (reference (call-graph--find-references parent))
-                 (when (not (member (setq caller (call-graph--find-caller reference)) caller-visited))
-                   (message caller)
-                   (push caller caller-visited)
-                   (setq sub-node (make-new-hash-table))
-                   (map-put sub-node call-graph-key-to-depth (1+ depth))
-                   (map-put node (intern caller) sub-node)))))))))))
+           (when (hash-table-p node)
+             (let ((depth (map-elt node call-graph-key-to-depth 0))
+                   caller location sub-node)
+               (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
+               (when (hash-table-p node)
+                 (seq-doseq (reference (call-graph--find-references parent))
+                   (unless (member (setq caller (call-graph--find-caller reference)
+                                         location (cdr caller)
+                                         caller (car caller)) caller-visited)
+                     (message caller)
+                     (push caller caller-visited)
+                     (setq sub-node (make-new-hash-table))
+                     (map-put sub-node call-graph-key-to-depth (1+ depth))
+                     (map-put sub-node call-graph-key-to-caller-location location)
+                     ;; save to cache for fast data retrival
+                     (map-put call-graph-internal-cache caller sub-node)
+                     (map-put node (intern caller) sub-node))))))))))))
+
+(defun call-graph--hierarchy-display (hierarchy)
+  (switch-to-buffer-other-window
+   (hierarchy-tree-display
+    hierarchy
+    (lambda (tree-item _)
+      (let* ((caller (symbol-name tree-item))
+             (location (map-elt (map-elt call-graph-internal-cache caller)
+                                call-graph-key-to-caller-location)))
+        ;; use propertize to avoid this error => Attempt to modify read-only object
+        ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
+        (insert (propertize caller 'caller-location location))))
+    (call-graph--get-buffer))))
 
 (defun call-graph--display (item root)
   "Prepare data for display.
@@ -166,20 +193,16 @@ ITEM is parent of root, ROOT should be a hash-table."
     (call-graph--walk-tree-in-bfs-order
      item root
      (lambda (parent node)
-       (when (mapp node)
-         (map-delete node call-graph-key-to-depth)
+       (when (hash-table-p node)
          (seq-doseq (child (map-keys node))
            (when first-time (setq first-time nil)
                  (hierarchy--add-relation hierarchy parent nil 'identity))
-           (hierarchy--add-relation hierarchy child parent 'identity)
-           (push
-            (concat "insert childe " (symbol-name child)
-                    " under parent " (symbol-name parent)) log)))))
-    (switch-to-buffer-other-window
-     (hierarchy-tree-display
-      hierarchy
-      (lambda (tree-item _) (insert (symbol-name tree-item)))
-      (call-graph--get-buffer)))
+           (unless (member child (list call-graph-key-to-depth call-graph-key-to-caller-location))
+             (hierarchy--add-relation hierarchy child parent 'identity)
+             (push
+              (concat "insert childe " (symbol-name child)
+                      " under parent " (symbol-name parent)) log))))))
+    (call-graph--hierarchy-display hierarchy)
     (seq-doseq (rec (reverse log)) (message rec))))
 
 ;;;###autoload
