@@ -237,11 +237,11 @@ ITEM is parent of root, ROOT should be a hash-table."
         ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
         (insert (propertize caller 'caller-location location))))
     (call-graph--get-buffer)))
-  (call-graph-expand-all))
+  (call-graph-mode)
+  (call-graph-widget-expand-all))
 
-;;;###autoload
 (defun call-graph ()
-  "Construct call-graph tree."
+  "Generate a function call-graph for the function at point."
   (interactive)
   (save-excursion
     (when-let ((target (symbol-at-point))
@@ -250,12 +250,43 @@ ITEM is parent of root, ROOT should be a hash-table."
       (call-graph--display target root))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Tree operation
+;; Widget operation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun call-graph-expand-all ()
+
+(defun call-graph-widget-expand-all ()
   "Iterate all widgets in buffer and expand em."
   (interactive)
   (tree-mode-expand-level 0))
+
+(defun call-graph-widget-collapse-all (&optional level)
+  "Iterate all widgets in buffer and close em at LEVEL."
+  (interactive)
+  (goto-char (point-min))
+  (tree-mode-expand-level (or level 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar call-graph-mode-map
+  (let ((map (make-keymap)))
+    (define-key map (kbd "e") 'call-graph-widget-expand-all)
+    (define-key map (kbd "c") 'call-graph-widget-collapse-all)
+    (define-key map (kbd "TAB") 'widget-forward)
+    (define-key map (kbd "<backtab>") 'widget-backward)
+    map)
+  "Keymap for call-graph major mode.")
+
+;;;###autoload
+(defun call-graph-mode ()
+  "Invoke the main mode."
+  (interactive)
+  (kill-all-local-variables)
+  (use-local-map call-graph-mode-map)
+  (setq major-mode 'md4rd-mode)
+  (setq mode-name "call-graph")
+  (run-hooks 'call-graph-mode-hook))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests
