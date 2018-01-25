@@ -3,12 +3,12 @@
 ;; Copyright (C) 2018 Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
+;; Maintainer: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Package-Version: 20180107.1540
-;; Keywords: tools, convenience
 ;; Version: 0.0.1
+;; Keywords: programming, convenience
 ;; Created: 2018-01-07
-;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0"))
+;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -38,20 +38,19 @@
 
 ;;; Usage:
 
-;; "C-c g" => (call-graph)
-;; *call-graph* will be  generated.
+;; "C-c g" => (call-graph) => buffer <*call-graph*> will be generated
 
 ;;; Code:
 
-(require 'seq)
-(require 'map)
-
 (require 'hierarchy)
-;; (require 'call-graph-utils)
+(require 'tree-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst call-graph--version "0.0.1"
+  "The current version of call-graph.")
 
 (defcustom call-graph-max-depth 2
   "The maximum depth of call graph."
@@ -80,6 +79,40 @@
   ;; :require 'saveplace
   ;; :group 'save-place
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Data Structures
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; simplicistic queue implementation
+;;; thanks to wasamasa, @see http://ix.io/DoE
+(defun list-to-queue (list)
+  (cons list (if (consp list) (last list) '())))
+
+(defun queue-to-list (queue)
+  (car queue))
+
+(defun make-queue ()
+  (cons '() '()))
+
+(defun queue-empty-p (queue)
+  (null (car queue)))
+
+(defun queue-get (queue)
+  (if (null (car queue))
+      (error "Queue is empty")
+    (let ((x (caar queue)))
+      (setcar queue (cdar queue))
+      (if (null (car queue)) (setcdr queue '()))
+      x)))
+
+(defun queue-put (queue x)
+  (let ((entry (cons x '())))
+    (if (null (car queue))
+        (setcar queue entry)
+      (setcdr (cdr queue) entry))
+    (setcdr queue entry)
+    x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -172,19 +205,6 @@ ITEM is parent of root, ROOT should be a hash-table."
                      (map-put call-graph-internal-cache caller sub-node)
                      (map-put node (intern caller) sub-node))))))))))))
 
-(defun call-graph--hierarchy-display (hierarchy)
-  (switch-to-buffer-other-window
-   (hierarchy-tree-display
-    hierarchy
-    (lambda (tree-item _)
-      (let* ((caller (symbol-name tree-item))
-             (location (map-elt (map-elt call-graph-internal-cache caller)
-                                call-graph-key-to-caller-location)))
-        ;; use propertize to avoid this error => Attempt to modify read-only object
-        ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
-        (insert (propertize caller 'caller-location location))))
-    (call-graph--get-buffer))))
-
 (defun call-graph--display (item root)
   "Prepare data for display.
 ITEM is parent of root, ROOT should be a hash-table."
@@ -205,6 +225,20 @@ ITEM is parent of root, ROOT should be a hash-table."
     (call-graph--hierarchy-display hierarchy)
     (seq-doseq (rec (reverse log)) (message rec))))
 
+(defun call-graph--hierarchy-display (hierarchy)
+  (switch-to-buffer-other-window
+   (hierarchy-tree-display
+    hierarchy
+    (lambda (tree-item _)
+      (let* ((caller (symbol-name tree-item))
+             (location (map-elt (map-elt call-graph-internal-cache caller)
+                                call-graph-key-to-caller-location)))
+        ;; use propertize to avoid this error => Attempt to modify read-only object
+        ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
+        (insert (propertize caller 'caller-location location))))
+    (call-graph--get-buffer)))
+  (call-graph-expand-all))
+
 ;;;###autoload
 (defun call-graph ()
   "Construct call-graph tree."
@@ -214,6 +248,14 @@ ITEM is parent of root, ROOT should be a hash-table."
                (root (make-new-hash-table)))
       (call-graph--create target root)
       (call-graph--display target root))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tree operation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun call-graph-expand-all ()
+  "Iterate all widgets in buffer and expand em."
+  (interactive)
+  (tree-mode-expand-level 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests
