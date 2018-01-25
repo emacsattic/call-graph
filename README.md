@@ -60,8 +60,9 @@ default is 2, the more depth is, the longer it takes.
 
 # Screenshots
 
-![subreddit](https://raw.githubusercontent.com/ahungry/redditor-mode/master/img/redditor-mode-3.png)
-![comments](https://raw.githubusercontent.com/ahungry/redditor-mode/master/img/redditor-mode-2.png)
+![call-graph-demo-0.gif](https://github.com/beacoder/call-graph/blob/master/call-graph-demo-0.gif)
+![call-graph-demo-1.gif](https://github.com/beacoder/call-graph/blob/master/call-graph-demo-1.gif)
+![call-graph-demo-2.gif](https://github.com/beacoder/call-graph/blob/master/call-graph-demo-2.gif)
 
 # Limitaions
 
