@@ -35,7 +35,8 @@
 ;; desired. And put the following expression into your ~/.emacs.
 ;;
 ;;     (require 'call-graph)
-
+;;     (global-set-key (kbd "C-c g") 'call-graph)
+;;
 ;;; Usage:
 
 ;; "C-c g" => (call-graph) => buffer <*call-graph*> will be generated
@@ -65,11 +66,11 @@
   "The key to get caller location.")
 
 ;; use hash-table as the building blocks for tree
-(defun make-new-hash-table ()
+(defun call-graph--make-node ()
   "Serve as tree node."
   (make-hash-table :test 'equal))
 
-(defvar call-graph-internal-cache (make-new-hash-table)
+(defvar call-graph-internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
 
 (defcustom call-graph-termination-list '("main")
@@ -89,19 +90,20 @@
 
 ;;; simplicistic queue implementation
 ;;; thanks to wasamasa, @see http://ix.io/DoE
-(defun list-to-queue (list)
-  (cons list (if (consp list) (last list) '())))
 
-(defun queue-to-list (queue)
-  (car queue))
+;; (defun list-to-queue (list)
+;;   (cons list (if (consp list) (last list) '())))
 
-(defun make-queue ()
+;; (defun queue-to-list (queue)
+;;   (car queue))
+
+(defun call-graph--make-queue ()
   (cons '() '()))
 
-(defun queue-empty-p (queue)
+(defun call-graph--queue-empty-p (queue)
   (null (car queue)))
 
-(defun queue-get (queue)
+(defun call-graph--queue-get (queue)
   (if (null (car queue))
       (error "Queue is empty")
     (let ((x (caar queue)))
@@ -109,7 +111,7 @@
       (if (null (car queue)) (setcdr queue '()))
       x)))
 
-(defun queue-put (queue x)
+(defun call-graph--queue-put (queue x)
   (let ((entry (cons x '())))
     (if (null (car queue))
         (setcar queue entry)
@@ -161,17 +163,17 @@
 (defun call-graph--walk-tree-in-bfs-order (item node func)
   "Wallk tree in BFS order, apply FUNC for each (item . node).
 ITEM is parent of NODE, NODE should be a hash-table."
-  (let ((queue (make-queue))
+  (let ((queue (call-graph--make-queue))
         queue-elt current-item current-node)
-    (queue-put queue (cons item node))
-    (while (not (queue-empty-p queue))
-      (setq queue-elt (queue-get queue)
+    (call-graph--queue-put queue (cons item node))
+    (while (not (call-graph--queue-empty-p queue))
+      (setq queue-elt (call-graph--queue-get queue)
             current-item (car queue-elt)
             current-node (cdr queue-elt))
       (funcall func current-item current-node)
       (seq-doseq (map-pair (map-pairs current-node))
         (when (hash-table-p (cdr map-pair))
-          (queue-put queue map-pair))))))
+          (call-graph--queue-put queue map-pair))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Function
@@ -201,7 +203,7 @@ ITEM is parent of root, ROOT should be a hash-table."
                                          caller (car caller)) caller-visited)
                      (message caller)
                      (push caller caller-visited)
-                     (setq sub-node (make-new-hash-table))
+                     (setq sub-node (call-graph--make-node))
                      (map-put sub-node call-graph-key-to-depth (1+ depth))
                      (map-put sub-node call-graph-key-to-caller-location location)
                      ;; save to cache for fast data retrival
@@ -248,7 +250,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (interactive)
   (save-excursion
     (when-let ((target (symbol-at-point))
-               (root (make-new-hash-table)))
+               (root (call-graph--make-node)))
       (call-graph--create target root)
       (call-graph--display target root))))
 
@@ -295,7 +297,7 @@ ITEM is parent of root, ROOT should be a hash-table."
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(global-set-key (kbd "C-c g") 'call-graph)
+;; (global-set-key (kbd "C-c g") 'call-graph)
 
 
 (provide 'call-graph)
