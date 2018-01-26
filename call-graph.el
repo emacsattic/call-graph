@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst call-graph--version "0.0.1"
-  "The current version of call-graph.")
+  "The current version of ‘call-graph’.")
 
 (defcustom call-graph-max-depth 2
   "The maximum depth of call graph."
@@ -64,6 +64,7 @@
 
 ;; use hash-table as the building blocks for tree
 (defun make-new-hash-table ()
+  "Serve as tree node."
   (make-hash-table :test 'equal))
 
 (defvar call-graph-internal-cache (make-new-hash-table)
@@ -74,7 +75,7 @@
   :type 'list)
 
 (defcustom call-graph-unique-buffer t
-  "Non-nil means only one buffer will be used for call-graph."
+  "Non-nil means only one buffer will be used for ‘call-graph’."
   :type 'boolean
   ;; :require 'saveplace
   ;; :group 'save-place
@@ -119,7 +120,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun call-graph--get-buffer ()
-  "Generate call-graph buffer."
+  "Generate ‘*call-graph*’ buffer."
   (let ((buffer-name "*call-graph*"))
     (if call-graph-unique-buffer
         (get-buffer-create buffer-name)
@@ -175,7 +176,7 @@ ITEM is parent of NODE, NODE should be a hash-table."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun call-graph--create (item root)
-  "Construct call-graph tree.
+  "Construct ‘call-graph’ tree.
 ITEM is parent of root, ROOT should be a hash-table."
   (when (and item root)
     (let ((caller-visited call-graph-termination-list))
@@ -241,7 +242,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (call-graph-widget-expand-all))
 
 (defun call-graph ()
-  "Generate a function call-graph for the function at point."
+  "Generate a function ‘call-graph’ for the function at point."
   (interactive)
   (save-excursion
     (when-let ((target (symbol-at-point))
@@ -275,7 +276,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     (define-key map (kbd "TAB") 'widget-forward)
     (define-key map (kbd "<backtab>") 'widget-backward)
     map)
-  "Keymap for call-graph major mode.")
+  "Keymap for ‘call-graph’ major mode.")
 
 ;;;###autoload
 (defun call-graph-mode ()
