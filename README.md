@@ -5,7 +5,7 @@ Generate call graph for cpp functions.
 # Where does this library come from?
 
 How many times have you had this feeling that
-Why can't we have this in emacs when you see
+why can't we have this in emacs when you see
 the fancy function call hierarchy in "modern" IDEs?
 I hope one day, with this library, we won't have
 to envy those "modern" IDEs for this again.
@@ -22,7 +22,7 @@ Clone the repo, then in your Emacs init file:
 
 ## Preparations
 
-Since currenly the implementation is based on GNU Global.
+Since currently the implementation is based on GNU Global.
 It's just recursively use global to find the caller of
 current function and eventually build up this call-graph tree.
 
@@ -33,8 +33,8 @@ GNU Global is required
 # Usage
 
 Place your cursor in the cpp function which you want to generate
-a call-graph for, and execute call-graph.
-By default, this funciton is binded to "C-c g".
+call-graph for and execute call-graph.
+You could bind it to "C-c g".
 
 ```lisp
     (global-set-key (kbd "C-c g") 'call-graph)
@@ -52,7 +52,7 @@ By default, this funciton is binded to "C-c g".
 # Customization
 
 Specify the parse depth of the call-graph.
-default is 2, the more depth is, the longer it takes.
+default is 2, the more the depth is, the longer it takes.
 
 ```
     (setq call-graph-max-depth 3)
@@ -66,7 +66,7 @@ default is 2, the more depth is, the longer it takes.
 
 # Limitations
 
-Currently when parsing the calling relations, header files is excluded.
+Currently when parsing calling relations, header files is excluded.
 Lots more need to be improved.
 
 # Todo
