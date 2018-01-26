@@ -283,7 +283,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (interactive)
   (kill-all-local-variables)
   (use-local-map call-graph-mode-map)
-  (setq major-mode 'md4rd-mode)
+  (setq major-mode 'call-graph-mode)
   (setq mode-name "call-graph")
   (run-hooks 'call-graph-mode-hook))
 
