@@ -64,7 +64,7 @@ default is 2, the more depth is, the longer it takes.
 ![call-graph-demo-1.gif](https://github.com/beacoder/call-graph/blob/master/img/call-graph-demo-1.gif)
 ![call-graph-demo-2.gif](https://github.com/beacoder/call-graph/blob/master/img/call-graph-demo-2.gif)
 
-# Limitaions
+# Limitations
 
 Currently when parsing the calling relations, header files is excluede.
 Lots more need to be improved.
