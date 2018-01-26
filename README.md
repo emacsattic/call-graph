@@ -75,6 +75,7 @@ Lots more need to be improved.
 - [ ] Incrementally generate sub caller.
 - [ ] Support mark sub caller tree as negtive match.
 - [ ] Support persistence of call-graph cache data.
+- [ ] Add async support for call-graph generation.
 
 # License
 
