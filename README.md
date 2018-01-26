@@ -60,9 +60,9 @@ default is 2, the more depth is, the longer it takes.
 
 # Screenshots
 
-![call-graph-demo-0.gif](https://github.com/beacoder/call-graph/blob/master/call-graph-demo-0.gif)
-![call-graph-demo-1.gif](https://github.com/beacoder/call-graph/blob/master/call-graph-demo-1.gif)
-![call-graph-demo-2.gif](https://github.com/beacoder/call-graph/blob/master/call-graph-demo-2.gif)
+![call-graph-demo-0.gif](https://github.com/beacoder/call-graph/blob/master/img/call-graph-demo-0.gif)
+![call-graph-demo-1.gif](https://github.com/beacoder/call-graph/blob/master/img/call-graph-demo-1.gif)
+![call-graph-demo-2.gif](https://github.com/beacoder/call-graph/blob/master/img/call-graph-demo-2.gif)
 
 # Limitaions
 
