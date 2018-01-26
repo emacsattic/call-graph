@@ -66,12 +66,12 @@ default is 2, the more depth is, the longer it takes.
 
 # Limitations
 
-Currently when parsing the calling relations, header files is excluede.
+Currently when parsing the calling relations, header files is excluded.
 Lots more need to be improved.
 
 # Todo
 
-Navigate to the caller file location.
+`[ ] Navigate to the caller file location.
 
 # License
 
