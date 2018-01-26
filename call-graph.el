@@ -49,8 +49,10 @@
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst call-graph--version "0.0.1"
-  "The current version of ‘call-graph’.")
+(defgroup call-graph nil
+  "Customization support for the ‘call-graph’."
+  :version "0.0.1"
+  :group 'applications)
 
 (defcustom call-graph-max-depth 2
   "The maximum depth of call graph."
@@ -142,7 +144,7 @@
         ;; (set (make-local-variable 'c++-mode-hook) nil)
         (c++-mode)
         (which-function-mode t)
-        (goto-line lineNb)
+        (forward-line lineNb)
         (setq caller (which-function)))
       (setq tmpVal (split-string caller "::"))
       (if (> (seq-length tmpVal) 1)
