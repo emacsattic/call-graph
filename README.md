@@ -71,7 +71,7 @@ Lots more need to be improved.
 
 # TODO
 
-[] Navigate to the file when moving on *call-graph*
+Navigate to the caller file location.
 
 # License
 
