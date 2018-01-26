@@ -69,7 +69,7 @@ default is 2, the more depth is, the longer it takes.
 Currently when parsing the calling relations, header files is excluede.
 Lots more need to be improved.
 
-# TODO
+# Todo
 
 Navigate to the caller file location.
 
