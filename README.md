@@ -71,7 +71,7 @@ Lots more need to be improved.
 
 # Todo
 
-- [ ] Navigate to the caller file location.
+- [x] Navigate to the caller file location.
 - [ ] Incrementally generate sub caller.
 - [ ] Support mark sub caller tree as negtive match.
 - [ ] Support persistence of call-graph cache data.
