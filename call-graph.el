@@ -57,7 +57,8 @@
 
 (defcustom call-graph-max-depth 2
   "The maximum depth of call graph."
-  :type 'integer)
+  :type 'integer
+  :group 'call-graph)
 
 (defconst call-graph-key-to-depth "*current-depth*"
   "The key to get current depth of call graph.")
@@ -75,14 +76,13 @@
 
 (defcustom call-graph-termination-list '("main")
   "Call-graph stops when seeing symbols from this list."
-  :type 'list)
+  :type 'list
+  :group 'call-graph)
 
 (defcustom call-graph-unique-buffer t
   "Non-nil means only one buffer will be used for ‘call-graph’."
   :type 'boolean
-  ;; :require 'saveplace
-  ;; :group 'save-place
-  )
+  :group 'call-graph)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data Structures
@@ -231,6 +231,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     (seq-doseq (rec (reverse log)) (message rec))))
 
 (defun call-graph--hierarchy-display (hierarchy)
+  "Display call graph with HIERARCHY."
   (switch-to-buffer-other-window
    (hierarchy-tree-display
     hierarchy
@@ -269,6 +270,52 @@ ITEM is parent of root, ROOT should be a hash-table."
   (goto-char (point-min))
   (tree-mode-expand-level (or level 1)))
 
+(defun call-graph-forward (arg)
+  "Move point to the next field or button.
+With optional ARG, move across that many fields."
+  (interactive "p")
+  (widget-forward arg)
+  (save-excursion
+    (forward-char 4)
+    (call-graph-display-file-at-point)))
+
+(defun call-graph-backward (arg)
+  "Move point to the previous field or button.
+With optional ARG, move across that many fields."
+  (interactive "p")
+  (widget-backward arg)
+  (save-excursion
+    (forward-char 4)
+    (call-graph-display-file-at-point)))
+
+(defun call-graph-display-file-at-point ()
+  "Display in another window the occurrence the current line describes."
+  (interactive)
+  (save-selected-window
+    (call-graph-visit-file-at-point)))
+
+(defun call-graph-visit-file-at-point ()
+  "Go to the occurrence on the current line."
+  (interactive)
+  (when-let ((location (get-text-property (point) 'caller-location))
+             (tmpVal (split-string location ":"))
+             (fileName (seq-elt tmpVal 0))
+             (lineNbStr (seq-elt tmpVal 1))
+             (lineNb (string-to-number lineNbStr))
+             (is-valid-file (file-exists-p fileName))
+             (is-valid-Nb (integerp lineNb)))
+    (find-file-read-only-other-window fileName)
+    (with-no-warnings (goto-line lineNb))))
+
+(defun call-graph-goto-file-at-point ()
+  "Go to the occurrence on the current line."
+  (interactive)
+  (if (get-char-property (point) 'button)
+      (save-excursion
+        (forward-char 4)
+        (call-graph-visit-file-at-point))
+    (call-graph-visit-file-at-point)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mode
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -277,8 +324,11 @@ ITEM is parent of root, ROOT should be a hash-table."
   (let ((map (make-keymap)))
     (define-key map (kbd "e") 'call-graph-widget-expand-all)
     (define-key map (kbd "c") 'call-graph-widget-collapse-all)
-    (define-key map (kbd "TAB") 'widget-forward)
-    (define-key map (kbd "<backtab>") 'widget-backward)
+    (define-key map (kbd "p") 'call-graph-backward)
+    (define-key map (kbd "n") 'call-graph-forward)
+    (define-key map (kbd "q") 'kill-this-buffer)
+    (define-key map (kbd "o") 'call-graph-goto-file-at-point)
+    (define-key map (kbd "<RET>") 'call-graph-visit-file-at-point)
     map)
   "Keymap for ‘call-graph’ major mode.")
 
@@ -290,7 +340,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (use-local-map call-graph-mode-map)
   (setq major-mode 'call-graph-mode)
   (setq mode-name "call-graph")
-  (run-hooks 'call-graph-mode-hook))
+  (run-mode-hooks 'call-graph-mode-hook))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
