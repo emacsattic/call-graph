@@ -34,7 +34,7 @@ GNU Global is required
 
 Place your cursor in the cpp function which you want to generate
 call-graph for and execute call-graph.
-You could bind it to "C-c g".
+You could bind it to <kbd>C-c g</kbd>.
 
 ```lisp
     (global-set-key (kbd "C-c g") 'call-graph)
