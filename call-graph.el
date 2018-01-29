@@ -60,16 +60,20 @@
   :type 'integer
   :group 'call-graph)
 
-(defconst call-graph-key-to-depth "*current-depth*"
+(defconst call-graph--key-to-depth "*current-depth*"
   "The key to get current depth of call graph.")
 
-(defconst call-graph-key-to-caller-location "*caller-location*"
+(defconst call-graph--key-to-caller-location "*caller-location*"
   "The key to get caller location.")
 
 ;; use hash-table as the building blocks for tree
 (defun call-graph--make-node ()
   "Serve as tree node."
   (make-hash-table :test 'equal))
+
+(defvar call-graph--hierarchy nil
+  "The hierarchy used to display call graph.")
+(make-variable-buffer-local 'call-graph--hierarchy)
 
 (defvar call-graph-internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
@@ -161,7 +165,7 @@
     (split-string command-out-put "\n" t)))
 
 (defun call-graph--walk-tree-in-bfs-order (item node func)
-  "Wallk tree in BFS order, apply FUNC for each (item . node).
+  "Wallk tree in BFS order, for each (ITEM . NODE) apply FUNC.
 ITEM is parent of NODE, NODE should be a hash-table."
   (let ((queue (call-graph--make-queue))
         queue-elt current-item current-node)
@@ -185,15 +189,15 @@ ITEM is parent of root, ROOT should be a hash-table."
   (when (and item root)
     (let ((caller-visited call-graph-termination-list))
       (push (symbol-name item) caller-visited)
-      (map-put root call-graph-key-to-depth 0)
-      ;; (map-put root call-graph-key-to-caller-location location)
+      (map-put root call-graph--key-to-depth 0)
+      ;; (map-put root call-graph--key-to-caller-location location)
       (map-put call-graph-internal-cache (symbol-name item) root)
       (catch 'exceed-max-depth
         (call-graph--walk-tree-in-bfs-order
          item root
          (lambda (parent node)
            (when (hash-table-p node)
-             (let ((depth (map-elt node call-graph-key-to-depth 0))
+             (let ((depth (map-elt node call-graph--key-to-depth 0))
                    caller location sub-node)
                (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
                (when (hash-table-p node)
@@ -204,8 +208,8 @@ ITEM is parent of root, ROOT should be a hash-table."
                      (message caller)
                      (push caller caller-visited)
                      (setq sub-node (call-graph--make-node))
-                     (map-put sub-node call-graph-key-to-depth (1+ depth))
-                     (map-put sub-node call-graph-key-to-caller-location location)
+                     (map-put sub-node call-graph--key-to-depth (1+ depth))
+                     (map-put sub-node call-graph--key-to-caller-location location)
                      ;; save to cache for fast data retrival
                      (map-put call-graph-internal-cache caller sub-node)
                      (map-put node (intern caller) sub-node))))))))))))
@@ -213,32 +217,31 @@ ITEM is parent of root, ROOT should be a hash-table."
 (defun call-graph--display (item root)
   "Prepare data for display.
 ITEM is parent of root, ROOT should be a hash-table."
-  (let ((first-time t) (log (list))
-        (hierarchy (hierarchy-new)))
+  (let ((first-time t) (log (list)))
     (call-graph--walk-tree-in-bfs-order
      item root
      (lambda (parent node)
        (when (hash-table-p node)
          (seq-doseq (child (map-keys node))
            (when first-time (setq first-time nil)
-                 (hierarchy--add-relation hierarchy parent nil 'identity))
-           (unless (member child (list call-graph-key-to-depth call-graph-key-to-caller-location))
-             (hierarchy--add-relation hierarchy child parent 'identity)
+                 (hierarchy--add-relation call-graph--hierarchy parent nil 'identity))
+           (unless (member child (list call-graph--key-to-depth call-graph--key-to-caller-location))
+             (hierarchy--add-relation call-graph--hierarchy child parent 'identity)
              (push
               (concat "insert childe " (symbol-name child)
                       " under parent " (symbol-name parent)) log))))))
-    (call-graph--hierarchy-display hierarchy)
+    (call-graph--hierarchy-display)
     (seq-doseq (rec (reverse log)) (message rec))))
 
-(defun call-graph--hierarchy-display (hierarchy)
-  "Display call graph with HIERARCHY."
+(defun call-graph--hierarchy-display ()
+  "Display call graph with hierarchy."
   (switch-to-buffer-other-window
    (hierarchy-tree-display
-    hierarchy
+    call-graph--hierarchy
     (lambda (tree-item _)
       (let* ((caller (symbol-name tree-item))
              (location (map-elt (map-elt call-graph-internal-cache caller)
-                                call-graph-key-to-caller-location)))
+                                call-graph--key-to-caller-location)))
         ;; use propertize to avoid this error => Attempt to modify read-only object
         ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
         (insert (propertize caller 'caller-location location))))
@@ -246,12 +249,14 @@ ITEM is parent of root, ROOT should be a hash-table."
   (call-graph-mode)
   (call-graph-widget-expand-all))
 
+;;;###autoload
 (defun call-graph ()
   "Generate a function `call-graph' for the function at point."
   (interactive)
   (save-excursion
     (when-let ((target (symbol-at-point))
                (root (call-graph--make-node)))
+      (setq call-graph--hierarchy (hierarchy-new))
       (call-graph--create target root)
       (call-graph--display target root))))
 
@@ -336,7 +341,6 @@ With optional ARG, move across that many fields."
 ;;;###autoload
 (define-derived-mode call-graph-mode special-mode "call-graph"
   "Major mode for viewing function's `call graph'.
-
 \\{call-graph-mode-map}"
   :group 'call-graph
   (buffer-disable-undo)
@@ -349,8 +353,7 @@ With optional ARG, move across that many fields."
   (hack-dir-local-variables-non-file-buffer)
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
-  (when (bound-and-true-p global-linum-mode)
-    (linum-mode -1))
+  (when (bound-and-true-p global-linum-mode) (linum-mode -1))
   (when (and (fboundp 'nlinum-mode)
              (bound-and-true-p global-nlinum-mode))
     (nlinum-mode -1))
