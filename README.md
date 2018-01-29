@@ -15,6 +15,7 @@ to envy those "modern" IDEs for this again.
 Clone the repo, then in your Emacs init file:
 
 ```lisp
+;; install hierarchy and tree-mode first
 (add-to-list 'load-path "/path/to/repo")
 (require 'call-graph)
 (call-graph) ;; to launch it
