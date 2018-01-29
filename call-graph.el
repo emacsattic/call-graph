@@ -51,7 +51,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup call-graph nil
-  "Customization support for the ‘call-graph’."
+  "Customization support for the `call-graph'."
   :version "0.0.2"
   :group 'applications)
 
@@ -80,7 +80,7 @@
   :group 'call-graph)
 
 (defcustom call-graph-unique-buffer t
-  "Non-nil means only one buffer will be used for ‘call-graph’."
+  "Non-nil means only one buffer will be used for `call-graph'."
   :type 'boolean
   :group 'call-graph)
 
@@ -180,7 +180,7 @@ ITEM is parent of NODE, NODE should be a hash-table."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun call-graph--create (item root)
-  "Construct ‘call-graph’ tree.
+  "Construct `call-graph' tree.
 ITEM is parent of root, ROOT should be a hash-table."
   (when (and item root)
     (let ((caller-visited call-graph-termination-list))
@@ -247,7 +247,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (call-graph-widget-expand-all))
 
 (defun call-graph ()
-  "Generate a function ‘call-graph’ for the function at point."
+  "Generate a function `call-graph' for the function at point."
   (interactive)
   (save-excursion
     (when-let ((target (symbol-at-point))
@@ -328,20 +328,33 @@ With optional ARG, move across that many fields."
     (define-key map (kbd "n") 'call-graph-forward)
     (define-key map (kbd "q") 'kill-this-buffer)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
+    (define-key map (kbd "g")  nil) ; nothing to revert
     (define-key map (kbd "<RET>") 'call-graph-visit-file-at-point)
     map)
-  "Keymap for ‘call-graph’ major mode.")
+  "Keymap for `call-graph' major mode.")
 
 ;;;###autoload
-(defun call-graph-mode ()
-  "Invoke the main mode."
-  (interactive)
-  (kill-all-local-variables)
-  (use-local-map call-graph-mode-map)
-  (setq major-mode 'call-graph-mode)
-  (setq mode-name "call-graph")
-  (run-mode-hooks 'call-graph-mode-hook))
+(define-derived-mode call-graph-mode special-mode "call-graph"
+  "Major mode for viewing function's `call graph'.
 
+\\{call-graph-mode-map}"
+  :group 'call-graph
+  (buffer-disable-undo)
+  (setq truncate-lines t
+        buffer-read-only t
+        show-trailing-whitespace nil
+        list-buffers-directory (abbreviate-file-name default-directory)
+        mode-name "call-graph")
+  (setq-local line-move-visual t)
+  (hack-dir-local-variables-non-file-buffer)
+  (make-local-variable 'text-property-default-nonsticky)
+  (push (cons 'keymap t) text-property-default-nonsticky)
+  (when (bound-and-true-p global-linum-mode)
+    (linum-mode -1))
+  (when (and (fboundp 'nlinum-mode)
+             (bound-and-true-p global-nlinum-mode))
+    (nlinum-mode -1))
+  (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests
