@@ -5,7 +5,7 @@
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.0.1
+;; Version: 0.0.2
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0"))
@@ -52,7 +52,7 @@
 
 (defgroup call-graph nil
   "Customization support for the ‘call-graph’."
-  :version "0.0.1"
+  :version "0.0.2"
   :group 'applications)
 
 (defcustom call-graph-max-depth 2
