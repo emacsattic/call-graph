@@ -78,6 +78,7 @@ Lots more need to be improved.
 - [ ] Incrementally generate sub caller.
 - [ ] Use call-graph cache data to improve performance.
 - [ ] Support mark sub caller tree as negtive match.
+- [ ] Support filter when searching for callers.
 - [ ] Support persistence of call-graph cache data.
 - [ ] Add async support for call-graph generation.
 
