@@ -75,6 +75,11 @@
   "The hierarchy used to display call graph.")
 (make-variable-buffer-local 'call-graph--hierarchy)
 
+;; use hash-table as the building blocks for tree
+(defun call-graph--make-node ()
+  "Serve as tree node."
+  (make-hash-table :test 'equal))
+
 (defvar call-graph-internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
 
@@ -126,11 +131,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; use hash-table as the building blocks for tree
-(defun call-graph--make-node ()
-  "Serve as tree node."
-  (make-hash-table :test 'equal))
 
 (defun call-graph--get-buffer ()
   "Generate ‘*call-graph*’ buffer."
