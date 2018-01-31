@@ -5,7 +5,7 @@
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.0.2
+;; Version: 0.0.3
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0"))
@@ -58,6 +58,11 @@
 (defcustom call-graph-max-depth 2
   "The maximum depth of call graph."
   :type 'integer
+  :group 'call-graph)
+
+(defcustom call-graph-filters nil
+  "The filters used by `call-graph' when searching caller."
+  :type 'list
   :group 'call-graph)
 
 (defconst call-graph--key-to-depth "*current-depth*"
@@ -152,17 +157,24 @@
         (which-function-mode t)
         (forward-line lineNb)
         (setq caller (which-function)))
-      (setq tmpVal (split-string caller "::"))
-      (if (> (seq-length tmpVal) 1)
-          (cons (seq-elt tmpVal 1) location)
-        (cons (seq-elt tmpVal 0) location)))))
+      (when (and caller (setq tmpVal (split-string caller "::")))
+        (if (> (seq-length tmpVal) 1)
+            (cons (seq-elt tmpVal 1) location)
+          (cons (seq-elt tmpVal 0) location))))))
 
 (defun call-graph--find-references (function)
   "Given a FUNCTION, return all references of this function."
-  (let* ((command
-          (concat (format "global -a --result=grep -r %s" function) " | grep -E \"\\.(cpp|cc):\""))
-         (command-out-put (shell-command-to-string command)))
-    (split-string command-out-put "\n" t)))
+  (let ((command
+         (format "global -a --result=grep -r %s | grep -E \"\\.(cpp|cc):\"" function))
+        (filter-separator " | ")
+        command-filter command-out-put)
+    (when (and (> (length call-graph-filters) 0)
+               (setq command-filter
+                     (mapconcat #'identity (delq nil call-graph-filters) filter-separator))
+               (not (string= command-filter filter-separator))
+               (setq command (concat command filter-separator command-filter))
+               (setq command-out-put (shell-command-to-string command)))
+      (split-string command-out-put "\n" t))))
 
 (defun call-graph--walk-tree-in-bfs-order (item node func)
   "Wallk tree in BFS order, for each (ITEM . NODE) apply FUNC.
@@ -198,21 +210,22 @@ ITEM is parent of root, ROOT should be a hash-table."
          (lambda (parent node)
            (when (hash-table-p node)
              (let ((depth (map-elt node call-graph--key-to-depth 0))
-                   caller location sub-node)
+                   location sub-node)
                (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
-               (when (hash-table-p node)
-                 (seq-doseq (reference (call-graph--find-references parent))
-                   (unless (member (setq caller (call-graph--find-caller reference)
-                                         location (cdr caller)
-                                         caller (car caller)) caller-visited)
-                     (message caller)
-                     (push caller caller-visited)
-                     (setq sub-node (call-graph--make-node))
-                     (map-put sub-node call-graph--key-to-depth (1+ depth))
-                     (map-put sub-node call-graph--key-to-caller-location location)
-                     ;; save to cache for fast data retrival
-                     (map-put call-graph-internal-cache caller sub-node)
-                     (map-put node (intern caller) sub-node))))))))))))
+               (seq-doseq (reference (call-graph--find-references parent))
+                 (when-let ((is-vallid reference)
+                            (caller (call-graph--find-caller reference))
+                            (location (cdr caller))
+                            (caller (car caller))
+                            (is-new (not (member caller caller-visited))))
+                   (message caller)
+                   (push caller caller-visited)
+                   (setq sub-node (call-graph--make-node))
+                   (map-put sub-node call-graph--key-to-depth (1+ depth))
+                   (map-put sub-node call-graph--key-to-caller-location location)
+                   ;; save to cache for fast data retrival
+                   (map-put call-graph-internal-cache caller sub-node)
+                   (map-put node (intern caller) sub-node)))))))))))
 
 (defun call-graph--display (item root)
   "Prepare data for display.
