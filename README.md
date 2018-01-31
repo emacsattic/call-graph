@@ -60,6 +60,13 @@ default is 2, the more the depth is, the longer it takes.
 
 ```
     (setq call-graph-max-depth 3)
+    
+```
+
+Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
+
+```
+    (setq call-graph-filters '("grep -v \"Test/\"" "grep -v \"_SUITE/\""))
 ```
 
 # Screenshots
@@ -78,7 +85,7 @@ Lots more need to be improved.
 - [ ] Incrementally generate sub caller.
 - [ ] Use call-graph cache data to improve performance.
 - [ ] Support mark sub caller tree as negtive match.
-- [ ] Support filter when searching for callers.
+- [x] Support filter when searching for callers.
 - [ ] Support persistence of call-graph cache data.
 - [ ] Add async support for call-graph generation.
 
