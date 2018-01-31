@@ -60,7 +60,6 @@ default is 2, the more the depth is, the longer it takes.
 
 ```
     (setq call-graph-max-depth 3)
-    
 ```
 
 Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
