@@ -171,9 +171,9 @@
     (when (and (> (length call-graph-filters) 0)
                (setq command-filter
                      (mapconcat #'identity (delq nil call-graph-filters) filter-separator))
-               (not (string= command-filter filter-separator))
-               (setq command (concat command filter-separator command-filter))
-               (setq command-out-put (shell-command-to-string command)))
+               (not (string= command-filter filter-separator)))
+      (setq command (concat command filter-separator command-filter)))
+    (when (setq command-out-put (shell-command-to-string command))
       (split-string command-out-put "\n" t))))
 
 (defun call-graph--walk-tree-in-bfs-order (item node func)
