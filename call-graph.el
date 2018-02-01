@@ -113,12 +113,15 @@ from one field to another in `call-graph'."
 ;;   (car queue))
 
 (defun call-graph--make-queue ()
+  "Create QUEUE."
   (cons '() '()))
 
 (defun call-graph--queue-empty-p (queue)
+  "Check QUEUE empty."
   (null (car queue)))
 
 (defun call-graph--queue-get (queue)
+  "Pop element from QUEUE."
   (if (null (car queue))
       (error "Queue is empty")
     (let ((x (caar queue)))
@@ -127,6 +130,7 @@ from one field to another in `call-graph'."
       x)))
 
 (defun call-graph--queue-put (queue x)
+  "Push into QUEUE element X."
   (let ((entry (cons x '())))
     (if (null (car queue))
         (setcar queue entry)
