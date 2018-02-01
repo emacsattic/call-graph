@@ -21,15 +21,12 @@ Clone the repo, then in your Emacs init file:
 (call-graph) ;; to launch it
 ```
 
-## Preparations
+## Dependencies
 
-Since currently the implementation is based on GNU Global.
-It's just recursively use global to find the caller of
-current function and eventually build up this call-graph tree.
+* `GNU Global`
 
-```
-GNU Global is required
-```
+Basicly `call-graph` just recursively use `Global` to find the caller of
+current function and eventually build up this `call-graph` tree.
 
 # Usage
 
