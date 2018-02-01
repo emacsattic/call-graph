@@ -294,15 +294,8 @@ ITEM is parent of root, ROOT should be a hash-table."
   (goto-char (point-min))
   (tree-mode-expand-level (or level 1)))
 
-(defun call-graph-display-file-at-point ()
-  "Display in another window the occurrence the current line describes."
-  (interactive)
-  (save-selected-window
-    (call-graph-visit-file-at-point)))
-
 (defun call-graph-visit-file-at-point ()
-  "Go to the occurrence on the current line."
-  (interactive)
+  "Visit occurrence on the current line."
   (when-let ((location (get-text-property (point) 'caller-location))
              (tmpVal (split-string location ":"))
              (fileName (seq-elt tmpVal 0))
@@ -316,11 +309,16 @@ ITEM is parent of root, ROOT should be a hash-table."
 (defun call-graph-goto-file-at-point ()
   "Go to the occurrence on the current line."
   (interactive)
-  (if (get-char-property (point) 'button)
-      (save-excursion
-        (forward-char 4)
-        (call-graph-visit-file-at-point))
+  (save-excursion
+    (when (get-char-property (point) 'button)
+      (forward-char 4))
     (call-graph-visit-file-at-point)))
+
+(defun call-graph-display-file-at-point ()
+  "Display in another window the occurrence the current line describes."
+  (interactive)
+  (save-selected-window
+    (call-graph-goto-file-at-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mode
@@ -333,9 +331,10 @@ ITEM is parent of root, ROOT should be a hash-table."
     (define-key map (kbd "p") 'widget-backward)
     (define-key map (kbd "n") 'widget-forward)
     (define-key map (kbd "q") 'kill-this-buffer)
+    (define-key map (kbd "d") 'call-graph-display-file-at-point)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
+    (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
     (define-key map (kbd "g")  nil) ; nothing to revert
-    (define-key map (kbd "<RET>") 'call-graph-visit-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
 
@@ -359,11 +358,7 @@ ITEM is parent of root, ROOT should be a hash-table."
              (bound-and-true-p global-nlinum-mode))
     (nlinum-mode -1))
   (when call-graph-display-file-at-point
-    (add-hook 'widget-move-hook
-              (lambda ()
-                (save-excursion
-                  (forward-char 4)
-                  (call-graph-display-file-at-point)))))
+    (add-hook 'widget-move-hook (lambda () (call-graph-display-file-at-point))))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
