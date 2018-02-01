@@ -93,6 +93,12 @@
   :type 'boolean
   :group 'call-graph)
 
+(defcustom call-graph-display-file-at-point t
+  "Non-nil means display file in another window while moving
+from one field to another in `call-graph'."
+  :type 'boolean
+  :group 'call-graph)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data Structures
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,24 +294,6 @@ ITEM is parent of root, ROOT should be a hash-table."
   (goto-char (point-min))
   (tree-mode-expand-level (or level 1)))
 
-(defun call-graph-forward (arg)
-  "Move point to the next field or button.
-With optional ARG, move across that many fields."
-  (interactive "p")
-  (widget-forward arg)
-  (save-excursion
-    (forward-char 4)
-    (call-graph-display-file-at-point)))
-
-(defun call-graph-backward (arg)
-  "Move point to the previous field or button.
-With optional ARG, move across that many fields."
-  (interactive "p")
-  (widget-backward arg)
-  (save-excursion
-    (forward-char 4)
-    (call-graph-display-file-at-point)))
-
 (defun call-graph-display-file-at-point ()
   "Display in another window the occurrence the current line describes."
   (interactive)
@@ -342,8 +330,8 @@ With optional ARG, move across that many fields."
   (let ((map (make-keymap)))
     (define-key map (kbd "e") 'call-graph-widget-expand-all)
     (define-key map (kbd "c") 'call-graph-widget-collapse-all)
-    (define-key map (kbd "p") 'call-graph-backward)
-    (define-key map (kbd "n") 'call-graph-forward)
+    (define-key map (kbd "p") 'widget-backward)
+    (define-key map (kbd "n") 'widget-forward)
     (define-key map (kbd "q") 'kill-this-buffer)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
     (define-key map (kbd "g")  nil) ; nothing to revert
@@ -370,6 +358,12 @@ With optional ARG, move across that many fields."
   (when (and (fboundp 'nlinum-mode)
              (bound-and-true-p global-nlinum-mode))
     (nlinum-mode -1))
+  (when call-graph-display-file-at-point
+    (add-hook 'widget-move-hook
+              (lambda ()
+                (save-excursion
+                  (forward-char 4)
+                  (call-graph-display-file-at-point)))))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
