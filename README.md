@@ -43,11 +43,12 @@ You could bind it to <kbd>C-c g</kbd>.
 ```lisp
     (define-key map (kbd "e") 'call-graph-widget-expand-all)
     (define-key map (kbd "c") 'call-graph-widget-collapse-all)
-    (define-key map (kbd "p") 'call-graph-backward)
-    (define-key map (kbd "n") 'call-graph-forward)
-    (define-key map (kbd "q") 'kill-this-buffer)
+    (define-key map (kbd "p") 'widget-backward)
+    (define-key map (kbd "n") 'widget-forward)
+    (define-key map (kbd "q") 'call-graph-quit)
+    (define-key map (kbd "d") 'call-graph-display-file-at-point)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
-    (define-key map (kbd "<RET>") 'call-graph-visit-file-at-point)
+    (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
 ```
 
 # Customization
