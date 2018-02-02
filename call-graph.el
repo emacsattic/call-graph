@@ -83,6 +83,10 @@
 (defvar call-graph-internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
 
+(defvar call-graph--window-configuration nil
+  "Save window-configuration when `call-graph' starts,
+restore window-configuration when `call-graph' exits.")
+
 (defcustom call-graph-termination-list '("main")
   "Call-graph stops when seeing symbols from this list."
   :type 'list
@@ -279,9 +283,18 @@ ITEM is parent of root, ROOT should be a hash-table."
   (save-excursion
     (when-let ((target (symbol-at-point))
                (root (call-graph--make-node)))
-      (setq call-graph--hierarchy (hierarchy-new))
+      (setq call-graph--hierarchy (hierarchy-new)
+            call-graph--window-configuration (current-window-configuration))
       (call-graph--create target root)
       (call-graph--display target root))))
+
+(defun call-graph-quit ()
+  "Quit `call-graph'."
+  (interactive)
+  (unwind-protect
+      (kill-this-buffer)
+    (when call-graph--window-configuration
+      (set-window-configuration call-graph--window-configuration))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget operation
@@ -334,7 +347,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     (define-key map (kbd "c") 'call-graph-widget-collapse-all)
     (define-key map (kbd "p") 'widget-backward)
     (define-key map (kbd "n") 'widget-forward)
-    (define-key map (kbd "q") 'kill-this-buffer)
+    (define-key map (kbd "q") 'call-graph-quit)
     (define-key map (kbd "d") 'call-graph-display-file-at-point)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
