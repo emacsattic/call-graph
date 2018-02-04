@@ -43,6 +43,7 @@
 
 ;;; Code:
 
+(require 'queue)
 (require 'hierarchy)
 (require 'tree-mode)
 
@@ -99,45 +100,6 @@
   :group 'call-graph)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Data Structures
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;; simplicistic queue implementation
-;;; thanks to wasamasa, @see http://ix.io/DoE
-
-;; (defun list-to-queue (list)
-;;   (cons list (if (consp list) (last list) '())))
-
-;; (defun queue-to-list (queue)
-;;   (car queue))
-
-(defun call-graph--make-queue ()
-  "Create QUEUE."
-  (cons '() '()))
-
-(defun call-graph--queue-empty-p (queue)
-  "Check QUEUE empty."
-  (null (car queue)))
-
-(defun call-graph--queue-get (queue)
-  "Pop element from QUEUE."
-  (if (null (car queue))
-      (error "Queue is empty")
-    (let ((x (caar queue)))
-      (setcar queue (cdar queue))
-      (if (null (car queue)) (setcdr queue '()))
-      x)))
-
-(defun call-graph--queue-put (queue x)
-  "Push into QUEUE element X."
-  (let ((entry (cons x '())))
-    (if (null (car queue))
-        (setcar queue entry)
-      (setcdr (cdr queue) entry))
-    (setcdr queue entry)
-    x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,17 +150,17 @@
 (defun call-graph--walk-tree-in-bfs-order (item node func)
   "Wallk tree in BFS order, for each (ITEM . NODE) apply FUNC.
 ITEM is parent of NODE, NODE should be a hash-table."
-  (let ((queue (call-graph--make-queue))
+  (let ((queue (queue-create))
         queue-elt current-item current-node)
-    (call-graph--queue-put queue (cons item node))
-    (while (not (call-graph--queue-empty-p queue))
-      (setq queue-elt (call-graph--queue-get queue)
+    (queue-enqueue queue (cons item node))
+    (while (not (queue-empty queue))
+      (setq queue-elt (queue-dequeue queue)
             current-item (car queue-elt)
             current-node (cdr queue-elt))
       (funcall func current-item current-node)
       (seq-doseq (map-pair (map-pairs current-node))
         (when (hash-table-p (cdr map-pair))
-          (call-graph--queue-put queue map-pair))))))
+          (queue-enqueue queue map-pair))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Function
