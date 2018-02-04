@@ -8,7 +8,7 @@
 ;; Version: 0.0.3
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
-;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0"))
+;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (queue "0.2"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -53,7 +53,7 @@
 
 (defgroup call-graph nil
   "Customization support for the `call-graph'."
-  :version "0.0.2"
+  :version "0.0.3"
   :group 'applications)
 
 (defcustom call-graph-max-depth 2
