@@ -83,10 +83,6 @@
 (defvar call-graph-internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
 
-(defvar call-graph--window-configuration nil
-  "Save window-configuration when `call-graph' starts,
-restore window-configuration when `call-graph' exits.")
-
 (defcustom call-graph-termination-list '("main")
   "Call-graph stops when seeing symbols from this list."
   :type 'list
@@ -98,8 +94,7 @@ restore window-configuration when `call-graph' exits.")
   :group 'call-graph)
 
 (defcustom call-graph-display-file-at-point t
-  "Non-nil means display file in another window while moving
-from one field to another in `call-graph'."
+  "Non-nil means display file in another window while moving from one field to another in `call-graph'."
   :type 'boolean
   :group 'call-graph)
 
@@ -155,26 +150,26 @@ from one field to another in `call-graph'."
 
 (defun call-graph--find-caller (reference)
   "Given a REFERENCE, return the caller of this reference."
-  (when-let ((tmpVal (split-string reference ":"))
-             (fileName (seq-elt tmpVal 0))
-             (lineNbStr (seq-elt tmpVal 1))
-             (lineNb (string-to-number lineNbStr))
-             (is-valid-file (file-exists-p fileName))
-             (is-valid-Nb (integerp lineNb)))
-    (let ((location (concat fileName ":" lineNbStr))
+  (when-let ((tmp-val (split-string reference ":"))
+             (file-name (seq-elt tmp-val 0))
+             (line-nb-str (seq-elt tmp-val 1))
+             (line-nb (string-to-number line-nb-str))
+             (is-valid-file (file-exists-p file-name))
+             (is-valid-nb (integerp line-nb)))
+    (let ((location (concat file-name ":" line-nb-str))
           caller)
       (with-temp-buffer
-        (insert-file-contents-literally fileName)
+        (insert-file-contents-literally file-name)
         ;; TODO: leave only hooks on which 'which-function-mode depends
         ;; (set (make-local-variable 'c++-mode-hook) nil)
         (c++-mode)
         (which-function-mode t)
-        (forward-line lineNb)
+        (forward-line line-nb)
         (setq caller (which-function)))
-      (when (and caller (setq tmpVal (split-string caller "::")))
-        (if (> (seq-length tmpVal) 1)
-            (cons (seq-elt tmpVal 1) location)
-          (cons (seq-elt tmpVal 0) location))))))
+      (when (and caller (setq tmp-val (split-string caller "::")))
+        (if (> (seq-length tmp-val) 1)
+            (cons (seq-elt tmp-val 1) location)
+          (cons (seq-elt tmp-val 0) location))))))
 
 (defun call-graph--find-references (function)
   "Given a FUNCTION, return all references of this function."
@@ -283,18 +278,14 @@ ITEM is parent of root, ROOT should be a hash-table."
   (save-excursion
     (when-let ((target (symbol-at-point))
                (root (call-graph--make-node)))
-      (setq call-graph--hierarchy (hierarchy-new)
-            call-graph--window-configuration (current-window-configuration))
+      (setq call-graph--hierarchy (hierarchy-new))
       (call-graph--create target root)
       (call-graph--display target root))))
 
 (defun call-graph-quit ()
   "Quit `call-graph'."
   (interactive)
-  (unwind-protect
-      (kill-this-buffer)
-    (when call-graph--window-configuration
-      (set-window-configuration call-graph--window-configuration))))
+  (kill-this-buffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget operation
@@ -314,14 +305,14 @@ ITEM is parent of root, ROOT should be a hash-table."
 (defun call-graph-visit-file-at-point ()
   "Visit occurrence on the current line."
   (when-let ((location (get-text-property (point) 'caller-location))
-             (tmpVal (split-string location ":"))
-             (fileName (seq-elt tmpVal 0))
-             (lineNbStr (seq-elt tmpVal 1))
-             (lineNb (string-to-number lineNbStr))
-             (is-valid-file (file-exists-p fileName))
-             (is-valid-Nb (integerp lineNb)))
-    (find-file-read-only-other-window fileName)
-    (with-no-warnings (goto-line lineNb))))
+             (tmp-val (split-string location ":"))
+             (file-name (seq-elt tmp-val 0))
+             (line-nb-str (seq-elt tmp-val 1))
+             (line-nb (string-to-number line-nb-str))
+             (is-valid-file (file-exists-p file-name))
+             (is-valid-nb (integerp line-nb)))
+    (find-file-read-only-other-window file-name)
+    (with-no-warnings (goto-line line-nb))))
 
 (defun call-graph-goto-file-at-point ()
   "Go to the occurrence on the current line."
