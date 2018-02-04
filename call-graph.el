@@ -370,10 +370,6 @@ ITEM is parent of root, ROOT should be a hash-table."
   (hack-dir-local-variables-non-file-buffer)
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
-  (when (bound-and-true-p global-linum-mode) (linum-mode -1))
-  (when (and (fboundp 'nlinum-mode)
-             (bound-and-true-p global-nlinum-mode))
-    (nlinum-mode -1))
   (when call-graph-display-file-at-point
     (add-hook 'widget-move-hook (lambda () (call-graph-display-file-at-point))))
   (run-mode-hooks))
