@@ -136,7 +136,8 @@
 (defun call-graph--find-references (function)
   "Given a FUNCTION, return all references of this function."
   (let ((command
-         (format "global -a --result=grep -r %s | grep -E \"\\.(cpp|cc):\"" function))
+         (format "global -a --result=grep -r %s | grep -E \"\\.(cpp|cc):\""
+                 (shell-quote-argument (symbol-name function))))
         (filter-separator " | ")
         command-filter command-out-put)
     (when (and (> (length call-graph-filters) 0)
