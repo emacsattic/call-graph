@@ -363,8 +363,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (buffer-disable-undo)
   (setq truncate-lines t
         buffer-read-only t
-        show-trailing-whitespace nil
-        list-buffers-directory (abbreviate-file-name default-directory))
+        show-trailing-whitespace nil)
   (setq-local line-move-visual t)
   (hack-dir-local-variables-non-file-buffer)
   (make-local-variable 'text-property-default-nonsticky)
