@@ -81,7 +81,7 @@
   "Serve as tree node."
   (make-hash-table :test 'equal))
 
-(defvar call-graph-internal-cache (call-graph--make-node)
+(defvar call-graph--internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
 
 (defcustom call-graph-termination-list '("main")
@@ -175,7 +175,7 @@ ITEM is parent of root, ROOT should be a hash-table."
       (push (symbol-name item) caller-visited)
       (map-put root call-graph--key-to-depth 0)
       ;; (map-put root call-graph--key-to-caller-location location)
-      (map-put call-graph-internal-cache (symbol-name item) root)
+      (map-put call-graph--internal-cache (symbol-name item) root)
       (catch 'exceed-max-depth
         (call-graph--walk-tree-in-bfs-order
          item root
@@ -196,7 +196,7 @@ ITEM is parent of root, ROOT should be a hash-table."
                    (map-put sub-node call-graph--key-to-depth (1+ depth))
                    (map-put sub-node call-graph--key-to-caller-location location)
                    ;; save to cache for fast data retrival
-                   (map-put call-graph-internal-cache caller sub-node)
+                   (map-put call-graph--internal-cache caller sub-node)
                    (map-put node (intern caller) sub-node)))))))))))
 
 (defun call-graph--display (item root)
@@ -225,7 +225,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     call-graph--hierarchy
     (lambda (tree-item _)
       (let* ((caller (symbol-name tree-item))
-             (location (map-elt (map-elt call-graph-internal-cache caller)
+             (location (map-elt (map-elt call-graph--internal-cache caller)
                                 call-graph--key-to-caller-location)))
         ;; use propertize to avoid this error => Attempt to modify read-only object
         ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
