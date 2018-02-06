@@ -118,12 +118,12 @@
 
 (defun call-graph--find-callers-in-cache (func)
   "Given a function FUNC, search internal cache to find all callers of this function."
-  (when-let ((sub-node (map-elt call-graph--internal-cache (symbol-name func)))
-             (func-is (message (symbol-name func)))
-             (number (message (number-to-string (map-length sub-node))))
-             (tmp-value (map-remove (lambda (key _) (call-graph--built-in-keys-p key)) sub-node))
-             (not-empty (not (map-empty-p tmp-value))))
-    (map-pairs sub-node)))
+  (when-let ((sub-node (map-elt call-graph--internal-cache func))
+             (has-callers
+              (not
+               (map-empty-p
+                (map-remove (lambda (key _) (call-graph--built-in-keys-p key)) sub-node)))))
+    sub-node))
 
 (defun call-graph--find-caller (reference)
   "Given a REFERENCE, return the caller of this reference."
@@ -220,41 +220,44 @@ ITEM is parent of root, ROOT should be a hash-table."
   (when (and item root)
     (let ((caller-visited call-graph-termination-list))
       (push (symbol-name item) caller-visited)
-      (map-put root call-graph--key-to-depth 0)
-      ;; (map-put root call-graph--key-to-caller-location location)
-      (map-put call-graph--internal-cache (symbol-name item) root)
+      (if (call-graph--find-callers-in-cache item)
+          (setq root (call-graph--find-callers-in-cache item))
+        (map-put call-graph--internal-cache item root)
+        (map-put root call-graph--key-to-depth 0)
+        ;; (map-put root call-graph--key-to-caller-location location)
+        )
       (catch 'exceed-max-depth
         (call-graph--walk-tree-in-bfs-order
          item root
          (lambda (parent node)
            (when (hash-table-p node)
-             (let ((depth (map-elt node call-graph--key-to-depth 0))
-                   location sub-node)
+             (let ((depth (map-elt node call-graph--key-to-depth 0)))
                (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
-               (if-let ((caller-pairs (call-graph--find-callers-in-cache parent))
+               (if-let ((caller-map (call-graph--find-callers-in-cache parent))
+                        (caller-pairs (map-pairs caller-map))
                         (not-empty (not (map-empty-p caller-pairs))))
                    ;; Found in internal-cache
                    (seq-doseq (caller-pair caller-pairs)
-                     (when-let ((is-valid (setq sub-node (cdr caller-pair)))
-                                (caller (car caller-pair))
+                     (when-let ((caller (car caller-pair))
+                                (is-valid (not (call-graph--built-in-keys-p caller)))
+                                (sub-node (cdr caller-pair))
                                 (is-new (not (member caller caller-visited))))
-                       (message caller)
-                       (map-put sub-node call-graph--key-to-depth (1+ depth))
-                       (map-put node (intern caller) sub-node)))
+                       (message (symbol-name caller))
+                       (map-put sub-node call-graph--key-to-depth (1+ depth))))
                  ;; Not found in internal-cache
                  (seq-doseq (reference (call-graph--find-references parent))
                    (when-let ((is-vallid reference)
-                              (caller (call-graph--find-caller reference))
-                              (location (cdr caller))
-                              (caller (car caller))
+                              (caller-pair (call-graph--find-caller reference))
+                              (location (cdr caller-pair))
+                              (caller (car caller-pair))
+                              (sub-node (call-graph--make-node))
                               (is-new (not (member caller caller-visited))))
                      (message caller)
                      (push caller caller-visited)
-                     (setq sub-node (call-graph--make-node))
+                     (map-put call-graph--internal-cache (intern caller) sub-node)
+                     (map-put node (intern caller) sub-node)
                      (map-put sub-node call-graph--key-to-depth (1+ depth))
-                     (map-put sub-node call-graph--key-to-caller-location location)
-                     (map-put call-graph--internal-cache caller sub-node) ; save to cache for fast data retrival
-                     (map-put node (intern caller) sub-node))))))))))))
+                     (map-put sub-node call-graph--key-to-caller-location location))))))))))))
 
 (defun call-graph--display (item root)
   "Prepare data for display.
