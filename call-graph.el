@@ -242,7 +242,7 @@ ITEM is parent of root, ROOT should be a hash-table."
                                 (is-valid (not (call-graph--built-in-keys-p caller)))
                                 (sub-node (cdr caller-pair))
                                 (is-new (not (member caller caller-visited))))
-                       (message (symbol-name caller))
+                       (message (format "Found in cached: %s" (symbol-name caller)))
                        (map-put sub-node call-graph--key-to-depth (1+ depth))))
                  ;; Not found in internal-cache
                  (seq-doseq (reference (call-graph--find-references parent))
@@ -252,7 +252,7 @@ ITEM is parent of root, ROOT should be a hash-table."
                               (caller (car caller-pair))
                               (sub-node (call-graph--make-node))
                               (is-new (not (member caller caller-visited))))
-                     (message caller)
+                     (message (format "Search returns: %s" caller))
                      (push caller caller-visited)
                      (map-put call-graph--internal-cache (intern caller) sub-node)
                      (map-put node (intern caller) sub-node)
