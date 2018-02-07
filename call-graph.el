@@ -271,7 +271,9 @@ ITEM is parent of root, ROOT should be a hash-table."
            (when first-time (setq first-time nil)
                  (hierarchy--add-relation call-graph--hierarchy parent nil 'identity))
            (unless (call-graph--built-in-keys-p child)
-             (hierarchy--add-relation call-graph--hierarchy child parent 'identity)
+             ;; ignore the "...only have one parent..." error
+             (ignore-errors
+               (hierarchy--add-relation call-graph--hierarchy child parent 'identity))
              (push
               (concat "insert childe " (symbol-name child)
                       " under parent " (symbol-name parent)) log))))))
@@ -285,7 +287,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     call-graph--hierarchy
     (lambda (tree-item _)
       (let* ((caller (symbol-name tree-item))
-             (location (map-elt (map-elt call-graph--internal-cache caller)
+             (location (map-elt (map-elt call-graph--internal-cache tree-item)
                                 call-graph--key-to-caller-location)))
         ;; use propertize to avoid this error => Attempt to modify read-only object
         ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
