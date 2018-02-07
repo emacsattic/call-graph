@@ -118,12 +118,12 @@
 
 (defun call-graph--find-callers-in-cache (func)
   "Given a function FUNC, search internal cache to find all callers of this function."
-  (when-let ((sub-node (map-elt call-graph--internal-cache func))
+  (when-let ((caller-map (map-elt call-graph--internal-cache func))
              (has-callers
               (not
                (map-empty-p
-                (map-remove (lambda (key _) (call-graph--built-in-keys-p key)) sub-node)))))
-    sub-node))
+                (map-remove (lambda (key _) (call-graph--built-in-keys-p key)) caller-map)))))
+    caller-map))
 
 (defun call-graph--find-caller (reference)
   "Given a REFERENCE, return the caller of this reference."
