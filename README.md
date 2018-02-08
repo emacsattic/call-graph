@@ -76,13 +76,14 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
 Currently when parsing calling relations, header files is excluded.
 Lots more need to be improved.
 
-# Todo
+# Features
 
 - [x] Navigate to the caller file location.
-- [ ] Incrementally generate sub caller.
 - [x] Use call-graph cache data to improve performance.
-- [ ] Support mark sub caller tree as negtive match.
 - [x] Support filter when searching for callers.
+- [ ] Incrementally generate sub caller.
+- [ ] Support mark sub caller tree as negtive match.
+- [ ] Add font to distinguish between active/non-active caller.
 - [ ] Support persistence of call-graph cache data.
 - [ ] Add async support for call-graph generation.
 
