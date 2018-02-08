@@ -209,16 +209,14 @@ ITEM is parent of root, ROOT should be a hash-table."
 (defun call-graph--display (hierarchy item root)
   "Prepare data for display in HIERARCHY.
 ITEM is parent of root, ROOT should be a hash-table."
-  (let ((first-time t) (log (list)))
+  (let ((log (list)))
     (call-graph--walk-tree-in-bfs-order
      item root
      (lambda (parent node)
        (when (hash-table-p node)
          (seq-doseq (child (map-keys node))
-           (when first-time (setq first-time nil)
-                 (hierarchy--add-relation hierarchy parent nil 'identity))
            (unless (call-graph--built-in-keys-p child)
-             (hierarchy--add-relation hierarchy child parent 'identity)
+             (hierarchy-add-tree hierarchy child (lambda (item) (when (eq item child) parent)))
              (push
               (concat "insert childe " (symbol-name child)
                       " under parent " (symbol-name parent)) log))))))
