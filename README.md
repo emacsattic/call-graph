@@ -57,7 +57,7 @@ Specify the parse depth of the call-graph.
 default is 2, the more the depth is, the longer it takes.
 
 ```
-    (setq call-graph-max-depth 3)
+    (setq call-graph-initial-max-depth 3)
 ```
 
 Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
@@ -80,7 +80,7 @@ Lots more need to be improved.
 
 - [x] Navigate to the caller file location.
 - [ ] Incrementally generate sub caller.
-- [ ] Use call-graph cache data to improve performance.
+- [x] Use call-graph cache data to improve performance.
 - [ ] Support mark sub caller tree as negtive match.
 - [x] Support filter when searching for callers.
 - [ ] Support persistence of call-graph cache data.

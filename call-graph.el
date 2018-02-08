@@ -56,8 +56,8 @@
   :version "0.0.3"
   :group 'applications)
 
-(defcustom call-graph-max-depth 2
-  "The maximum depth of call graph."
+(defcustom call-graph-initial-max-depth 2
+  "The maximum initial depth of call graph."
   :type 'integer
   :group 'call-graph)
 
@@ -72,10 +72,6 @@
 (defconst call-graph--key-to-caller-location "*caller-location*"
   "The key to get caller location.")
 
-(defvar call-graph--hierarchy nil
-  "The hierarchy used to display call graph.")
-(make-variable-buffer-local 'call-graph--hierarchy)
-
 ;; use hash-table as the building blocks for tree
 (defun call-graph--make-node ()
   "Serve as tree node."
@@ -87,11 +83,6 @@
 (defcustom call-graph-termination-list '("main")
   "Call-graph stops when seeing symbols from this list."
   :type 'list
-  :group 'call-graph)
-
-(defcustom call-graph-unique-buffer t
-  "Non-nil means only one buffer will be used for `call-graph'."
-  :type 'boolean
   :group 'call-graph)
 
 (defcustom call-graph-display-file-at-point t
@@ -106,9 +97,7 @@
 (defun call-graph--get-buffer ()
   "Generate ‘*call-graph*’ buffer."
   (let ((buffer-name "*call-graph*"))
-    (if call-graph-unique-buffer
-        (get-buffer-create buffer-name)
-      (generate-new-buffer buffer-name))))
+    (get-buffer-create buffer-name)))
 
 (defun call-graph--built-in-keys-p (key)
   "Return non-nil if KEY is not one of built-in keys."
@@ -117,7 +106,7 @@
                call-graph--key-to-caller-location)))
 
 (defun call-graph--find-callers-in-cache (func)
-  "Given a function FUNC, search internal cache to find all callers of this function."
+  "Given a FUNC, find caller-map of it from cache."
   (when-let ((caller-map (map-elt call-graph--internal-cache func))
              (has-callers
               (not
@@ -149,7 +138,7 @@
           (cons (seq-elt tmp-val 0) location))))))
 
 (defun call-graph--find-references (func)
-  "Given a function FUNC, return all references of it."
+  "Given a FUNC, return all references of it."
   (let ((command
          (format "global -a --result=grep -r %s | grep -E \"\\.(cpp|cc):\""
                  (shell-quote-argument (symbol-name func))))
@@ -182,85 +171,43 @@ ITEM is parent of NODE, NODE should be a hash-table."
 ;; Core Function
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun call-graph--create (item root)
+(defun call-graph--create (item)
   "Construct `call-graph' tree.
 ITEM is parent of root, ROOT should be a hash-table."
-  (when (and item root)
-    (let ((caller-visited call-graph-termination-list))
-      (push (symbol-name item) caller-visited)
+  (let ((caller-visited call-graph-termination-list) root)
+    (push (symbol-name item) caller-visited)
+    (unless (setq root (call-graph--find-callers-in-cache item))
+      ;; Not found in internal-cache
+      (setq root (call-graph--make-node))
+      (map-put call-graph--internal-cache item root)
       (map-put root call-graph--key-to-depth 0)
       ;; (map-put root call-graph--key-to-caller-location location)
-      (map-put call-graph--internal-cache (symbol-name item) root)
-      (catch 'exceed-max-depth
-        (call-graph--walk-tree-in-bfs-order
-         item root
-         (lambda (parent node)
-           (when (hash-table-p node)
-             (let ((depth (map-elt node call-graph--key-to-depth 0))
-                   location sub-node)
-               (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
-               (seq-doseq (reference (call-graph--find-references parent))
-                 (when-let ((is-vallid reference)
-                            (caller (call-graph--find-caller reference))
-                            (location (cdr caller))
-                            (caller (car caller))
-                            (is-new (not (member caller caller-visited))))
-                   (message caller)
-                   (push caller caller-visited)
-                   (setq sub-node (call-graph--make-node))
-                   (map-put sub-node call-graph--key-to-depth (1+ depth))
-                   (map-put sub-node call-graph--key-to-caller-location location)
-                   ;; save to cache for fast data retrival
-                   (map-put call-graph--internal-cache caller sub-node)
-                   (map-put node (intern caller) sub-node)))))))))))
-
-(defun call-graph--create2 (item root)
-  "Construct `call-graph' tree.
-ITEM is parent of root, ROOT should be a hash-table."
-  (when (and item root)
-    (let ((caller-visited call-graph-termination-list))
-      (push (symbol-name item) caller-visited)
-      (if (call-graph--find-callers-in-cache item)
-          (setq root (call-graph--find-callers-in-cache item))
-        (map-put call-graph--internal-cache item root)
-        (map-put root call-graph--key-to-depth 0)
-        ;; (map-put root call-graph--key-to-caller-location location)
-        )
       (catch 'exceed-max-depth
         (call-graph--walk-tree-in-bfs-order
          item root
          (lambda (parent node)
            (when (hash-table-p node)
              (let ((depth (map-elt node call-graph--key-to-depth 0)))
-               (when (> depth call-graph-max-depth) (throw 'exceed-max-depth t))
-               (if-let ((caller-map (call-graph--find-callers-in-cache parent))
-                        (caller-pairs (map-pairs caller-map))
-                        (not-empty (not (map-empty-p caller-pairs))))
-                   ;; Found in internal-cache
-                   (seq-doseq (caller-pair caller-pairs)
-                     (when-let ((caller (car caller-pair))
-                                (is-valid (not (call-graph--built-in-keys-p caller)))
-                                (sub-node (cdr caller-pair))
-                                (is-new (not (member caller caller-visited))))
-                       (message (format "Found in cached: %s" (symbol-name caller)))
-                       (map-put sub-node call-graph--key-to-depth (1+ depth))))
-                 ;; Not found in internal-cache
-                 (seq-doseq (reference (call-graph--find-references parent))
-                   (when-let ((is-vallid reference)
-                              (caller-pair (call-graph--find-caller reference))
-                              (location (cdr caller-pair))
-                              (caller (car caller-pair))
-                              (sub-node (call-graph--make-node))
-                              (is-new (not (member caller caller-visited))))
-                     (message (format "Search returns: %s" caller))
-                     (push caller caller-visited)
-                     (map-put call-graph--internal-cache (intern caller) sub-node)
-                     (map-put node (intern caller) sub-node)
-                     (map-put sub-node call-graph--key-to-depth (1+ depth))
-                     (map-put sub-node call-graph--key-to-caller-location location))))))))))))
+               (map-delete node call-graph--key-to-depth)
+               (when (> depth call-graph-initial-max-depth) (throw 'exceed-max-depth t))
 
-(defun call-graph--display (item root)
-  "Prepare data for display.
+               (seq-doseq (reference (call-graph--find-references parent))
+                 (when-let ((is-vallid reference)
+                            (caller-pair (call-graph--find-caller reference))
+                            (location (cdr caller-pair))
+                            (caller (car caller-pair))
+                            (sub-node (call-graph--make-node))
+                            (is-new (not (member caller caller-visited))))
+                   (message (format "Search returns: %s" caller))
+                   (push caller caller-visited)
+                   (map-put call-graph--internal-cache (intern caller) sub-node)
+                   (map-put node (intern caller) sub-node)
+                   (map-put sub-node call-graph--key-to-depth (1+ depth))
+                   (map-put sub-node call-graph--key-to-caller-location location)))))))))
+    root))
+
+(defun call-graph--display (hierarchy item root)
+  "Prepare data for display in HIERARCHY.
 ITEM is parent of root, ROOT should be a hash-table."
   (let ((first-time t) (log (list)))
     (call-graph--walk-tree-in-bfs-order
@@ -269,22 +216,20 @@ ITEM is parent of root, ROOT should be a hash-table."
        (when (hash-table-p node)
          (seq-doseq (child (map-keys node))
            (when first-time (setq first-time nil)
-                 (hierarchy--add-relation call-graph--hierarchy parent nil 'identity))
+                 (hierarchy--add-relation hierarchy parent nil 'identity))
            (unless (call-graph--built-in-keys-p child)
-             ;; ignore the "...only have one parent..." error
-             (ignore-errors
-               (hierarchy--add-relation call-graph--hierarchy child parent 'identity))
+             (hierarchy--add-relation hierarchy child parent 'identity)
              (push
               (concat "insert childe " (symbol-name child)
                       " under parent " (symbol-name parent)) log))))))
-    (call-graph--hierarchy-display)
+    (call-graph--hierarchy-display hierarchy)
     (seq-doseq (rec (reverse log)) (message rec))))
 
-(defun call-graph--hierarchy-display ()
-  "Display call graph with hierarchy."
+(defun call-graph--hierarchy-display (hierarchy)
+  "Display call graph in HIERARCHY."
   (switch-to-buffer-other-window
    (hierarchy-tree-display
-    call-graph--hierarchy
+    hierarchy
     (lambda (tree-item _)
       (let* ((caller (symbol-name tree-item))
              (location (map-elt (map-elt call-graph--internal-cache tree-item)
@@ -302,10 +247,9 @@ ITEM is parent of root, ROOT should be a hash-table."
   (interactive)
   (save-excursion
     (when-let ((target (symbol-at-point))
-               (root (call-graph--make-node)))
-      (setq call-graph--hierarchy (hierarchy-new))
-      (call-graph--create2 target root)
-      (call-graph--display target root))))
+               (root (call-graph--create target))
+               (hierarchy (hierarchy-new)))
+      (call-graph--display hierarchy target root))))
 
 (defun call-graph-quit ()
   "Quit `call-graph'."
