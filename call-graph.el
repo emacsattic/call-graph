@@ -111,11 +111,13 @@
              (has-callers
               (not
                (map-empty-p
-                (map-remove (lambda (key _) (call-graph--built-in-keys-p key)) caller-map)))))
+                (map-remove
+                 (lambda (key _) (call-graph--built-in-keys-p key))
+                 caller-map)))))
     caller-map))
 
 (defun call-graph--find-caller (reference)
-  "Given a REFERENCE, return the caller of this reference."
+  "Given a REFERENCE, return the caller as (caller . location)."
   (when-let ((tmp-val (split-string reference ":"))
              (file-name (seq-elt tmp-val 0))
              (line-nb-str (seq-elt tmp-val 1))
@@ -134,11 +136,11 @@
         (setq caller (which-function)))
       (when (and caller (setq tmp-val (split-string caller "::")))
         (if (> (seq-length tmp-val) 1)
-            (cons (seq-elt tmp-val 1) location)
-          (cons (seq-elt tmp-val 0) location))))))
+            (cons (intern (seq-elt tmp-val 1)) location)
+          (cons (intern (seq-elt tmp-val 0)) location))))))
 
 (defun call-graph--find-references (func)
-  "Given a FUNC, return all references of it."
+  "Given a FUNC, return all references as a list."
   (let ((command
          (format "global -a --result=grep -r %s | grep -E \"\\.(cpp|cc):\""
                  (shell-quote-argument (symbol-name func))))
@@ -196,15 +198,53 @@ ITEM is parent of root, ROOT should be a hash-table."
                             (caller-pair (call-graph--find-caller reference))
                             (location (cdr caller-pair))
                             (caller (car caller-pair))
-                            (sub-node (call-graph--make-node))
+                            (caller-map (call-graph--make-node))
                             (is-new (not (member caller caller-visited))))
-                   (message (format "Search returns: %s" caller))
+                   (message (format "Search returns: %s" (symbol-name caller)))
                    (push caller caller-visited)
-                   (map-put call-graph--internal-cache (intern caller) sub-node)
-                   (map-put node (intern caller) sub-node)
-                   (map-put sub-node call-graph--key-to-depth (1+ depth))
-                   (map-put sub-node call-graph--key-to-caller-location location)))))))))
+                   (map-put call-graph--internal-cache caller caller-map)
+                   (map-put node caller caller-map)
+                   (map-put caller-map call-graph--key-to-depth (1+ depth))
+                   (map-put caller-map call-graph--key-to-caller-location location)))))))))
     root))
+
+(defun call-graph--find-callers (func depth)
+  "Given a FUNC, return the caller-map, DEPTH is the depth of caller-map."
+  (let ((caller-map (call-graph--find-callers-in-cache func))
+        (new-depth (1- depth)))
+    (when (> depth 0)
+
+      ;; Not found in internal-cache.
+      (unless caller-map
+        (setq caller-map (call-graph--make-node))
+        (map-put call-graph--internal-cache func caller-map)
+        (seq-doseq (reference (call-graph--find-references func))
+          (when-let ((is-vallid reference)
+                     (caller-pair (call-graph--find-caller reference))
+                     (caller (car caller-pair))
+                     (location (cdr caller-pair)))
+            (message (format "Search returns: %s" (symbol-name caller)))
+            (if-let ((sub-caller-map (call-graph--find-callers-in-cache caller)))
+                (map-put caller-map caller sub-caller-map)
+              (setq sub-caller-map (call-graph--make-node))
+              (map-put sub-caller-map call-graph--key-to-caller-location location)
+              (map-put caller-map caller sub-caller-map)))))
+
+      ;; Recursively find callers.
+      (seq-doseq (caller
+                  (map-keys
+                   (map-remove
+                    (lambda (key _) (call-graph--built-in-keys-p key))
+                    caller-map)))
+        (call-graph--find-callers caller new-depth))
+
+      ;; Return the top-level caller-map.
+      caller-map)))
+
+(defun call-graph--create2 (item)
+  "Construct `call-graph' tree.
+ITEM is parent of root, ROOT should be a hash-table."
+  (call-graph--find-callers item 3))
 
 (defun call-graph--display (hierarchy item root)
   "Prepare data for display in HIERARCHY.
@@ -247,7 +287,8 @@ ITEM is parent of root, ROOT should be a hash-table."
     (when-let ((target (symbol-at-point))
                (root (call-graph--create target))
                (hierarchy (hierarchy-new)))
-      (call-graph--display hierarchy target root))))
+      (call-graph--display hierarchy target root)
+      (hierarchy-leafs hierarchy))))
 
 (defun call-graph-quit ()
   "Quit `call-graph'."
