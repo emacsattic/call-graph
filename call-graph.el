@@ -80,6 +80,10 @@
 (defvar call-graph--internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
 
+;; Refactor with cl-defstruct later on.
+(defvar call-graph--location-cache (call-graph--make-node)
+  "The caller locations map.")
+
 (defcustom call-graph-termination-list '("main")
   "Call-graph stops when seeing symbols from this list."
   :type 'list
@@ -209,36 +213,37 @@ ITEM is parent of root, ROOT should be a hash-table."
     root))
 
 (defun call-graph--find-callers (func depth)
-  "Given a FUNC, return the caller-map, DEPTH is the depth of caller-map."
-  (let ((caller-map (call-graph--find-callers-in-cache func))
-        (new-depth (1- depth)))
-    (when (> depth 0)
+  "Given a FUNC, return its caller-map.
+DEPTH is the depth of caller-map."
+  (when-let ((is-valid (> depth 0))
+             (next-depth (1- depth)))
+    (let ((caller-map (map-elt call-graph--internal-cache func)))
 
-      ;; Not found in internal-cache.
+      ;; search in internal-cache.
       (unless caller-map
         (setq caller-map (call-graph--make-node))
-        (map-put call-graph--internal-cache func caller-map)
+        (map-put call-graph--internal-cache func caller-map))
+
+      ;; callers not found.
+      (when (map-empty-p (map-keys caller-map))
         (seq-doseq (reference (call-graph--find-references func))
           (when-let ((is-vallid reference)
                      (caller-pair (call-graph--find-caller reference))
                      (caller (car caller-pair))
                      (location (cdr caller-pair)))
             (message (format "Search returns: %s" (symbol-name caller)))
-            (if-let ((sub-caller-map (call-graph--find-callers-in-cache caller)))
+            (if-let ((sub-caller-map (map-elt call-graph--internal-cache caller)))
                 (map-put caller-map caller sub-caller-map)
               (setq sub-caller-map (call-graph--make-node))
-              (map-put sub-caller-map call-graph--key-to-caller-location location)
-              (map-put caller-map caller sub-caller-map)))))
+              (map-put caller-map caller sub-caller-map)
+              (map-put call-graph--internal-cache caller sub-caller-map)
+              (map-put call-graph--location-cache caller location)))))
 
-      ;; Recursively find callers.
-      (seq-doseq (caller
-                  (map-keys
-                   (map-remove
-                    (lambda (key _) (call-graph--built-in-keys-p key))
-                    caller-map)))
-        (call-graph--find-callers caller new-depth))
+      ;; recursively find callers.
+      (seq-doseq (caller (map-keys caller-map))
+        (call-graph--find-callers caller next-depth))
 
-      ;; Return the top-level caller-map.
+      ;; return top-level caller-map.
       caller-map)))
 
 (defun call-graph--create2 (item)
@@ -270,8 +275,10 @@ ITEM is parent of root, ROOT should be a hash-table."
     hierarchy
     (lambda (tree-item _)
       (let* ((caller (symbol-name tree-item))
+             ;; (location (map-elt call-graph--location-cache tree-item))
              (location (map-elt (map-elt call-graph--internal-cache tree-item)
-                                call-graph--key-to-caller-location)))
+                                call-graph--key-to-caller-location))
+             )
         ;; use propertize to avoid this error => Attempt to modify read-only object
         ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
         (insert (propertize caller 'caller-location location))))
@@ -287,8 +294,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     (when-let ((target (symbol-at-point))
                (root (call-graph--create target))
                (hierarchy (hierarchy-new)))
-      (call-graph--display hierarchy target root)
-      (hierarchy-leafs hierarchy))))
+      (call-graph--display hierarchy target root))))
 
 (defun call-graph-quit ()
   "Quit `call-graph'."
