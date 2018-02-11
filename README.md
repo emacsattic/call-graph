@@ -48,6 +48,9 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "q") 'call-graph-quit)
     (define-key map (kbd "d") 'call-graph-display-file-at-point)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
+    (define-key map (kbd "+") 'call-graph-expand)
+    (define-key map (kbd "_") 'call-graph-collapse)
+    (define-key map (kbd "g") 'call-graph)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
 ```
 
