@@ -5,7 +5,7 @@
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.0.3
+;; Version: 0.0.4
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (queue "0.2"))
@@ -53,7 +53,7 @@
 
 (defgroup call-graph nil
   "Customization support for the `call-graph'."
-  :version "0.0.3"
+  :version "0.0.4"
   :group 'applications)
 
 (defcustom call-graph-initial-max-depth 2
@@ -139,39 +139,6 @@
     (when (setq command-out-put (shell-command-to-string command))
       (split-string command-out-put "\n" t))))
 
-(defun call-graph--walk-tree-in-bfs-order (item node func)
-  "Wallk tree in BFS order, for each (ITEM . NODE) apply FUNC.
-ITEM is parent of NODE, NODE should be a hash-table."
-  (let ((queue (queue-create))
-        queue-elt current-item current-node)
-    (queue-enqueue queue (cons item node))
-    (while (not (queue-empty queue))
-      (setq queue-elt (queue-dequeue queue)
-            current-item (car queue-elt)
-            current-node (cdr queue-elt))
-      (funcall func current-item current-node)
-      (seq-doseq (map-pair (map-pairs current-node))
-        (when (hash-table-p (cdr map-pair))
-          (queue-enqueue queue map-pair))))))
-
-(defun call-graph--reachable-p (func caller-list)
-  "Starting from FUNC, Check if there's a way to reach anyone from CALLER-LIST.
-This is used to check circular reference."
-  (let ((caller-map (map-elt call-graph--internal-cache func)))
-    (catch 'reachable
-      (call-graph--walk-tree-in-bfs-order
-       func caller-map
-       (lambda (_ node)
-         (when (hash-table-p node)
-           (seq-doseq (child (map-keys node))
-             (when (member child caller-list)
-               (message
-                "Circular-Reference detected: %s references %s, while %s references %s too."
-                child func func child)
-               (throw 'reachable t))))))
-      ;; not reachable
-      nil)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Function
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -194,28 +161,38 @@ This is used to check circular reference."
     (call-graph-mode)
     (call-graph-widget-expand-all)))
 
+(defun call-graph--display-caller-map (hierarchy func caller-map &optional actual-depth)
+  "Given HIERARCHY and FUNC, display its CALLER-MAP, calculate ACTUAL-DEPTH."
+  (when (and hierarchy func caller-map)
+    (when-let ((actual-depth (or actual-depth 1))
+               (next-depth (1+ actual-depth))
+               (callers (map-keys caller-map))
+               (is-not-empty (not (map-empty-p callers))))
+
+      ;; populate hierarchy data.
+      (seq-doseq (caller callers)
+        (hierarchy-add-tree hierarchy caller (lambda (item) (when (eq item caller) func)))
+        (message "insert child %s under parent %s" (symbol-name caller) (symbol-name func)))
+
+      ;; calculate the actual depth.
+      (when (> actual-depth call-graph--current-depth)
+        (setq call-graph--current-depth actual-depth))
+
+      ;; recursively populate callers.
+      (seq-doseq (caller callers)
+        (call-graph--display-caller-map hierarchy caller
+                                        (map-elt call-graph--internal-cache caller) next-depth)))))
+
 (defun call-graph--display (hierarchy item caller-map)
   "Prepare data and display `call-graph' in HIERARCHY.
 ITEM is the root, CALLER-MAP should be a hash-table."
-  (let ((log (list)))
-    (call-graph--walk-tree-in-bfs-order
-     item caller-map
-     (lambda (parent node)
-       (when (hash-table-p node)
-         (seq-doseq (child (map-keys node))
-           (hierarchy-add-tree hierarchy child (lambda (item) (when (eq item child) parent)))
-           (push
-            (concat "insert childe " (symbol-name child)
-                    " under parent " (symbol-name parent)) log)))))
-    (call-graph--hierarchy-display hierarchy)
-    (seq-doseq (rec (reverse log)) (message rec))))
+  (call-graph--display-caller-map hierarchy item caller-map)
+  (call-graph--hierarchy-display hierarchy))
 
-(defun call-graph--find-caller-map (func depth &optional seen-callers)
+(defun call-graph--find-caller-map (func depth)
   "Given a FUNC, return its caller-map.
 DEPTH is the depth of caller-map, SEEN-CALLERS prevent infinite loop."
-  (when-let ((next-depth (and (> depth 0) (1- depth)))
-             (seen-callers
-              (if seen-callers (push func seen-callers) (list func))))
+  (when-let ((next-depth (and (> depth 0) (1- depth))))
     (let ((caller-map (map-elt call-graph--internal-cache func)))
 
       ;; search in internal-cache.
@@ -232,24 +209,16 @@ DEPTH is the depth of caller-map, SEEN-CALLERS prevent infinite loop."
                      (location (cdr caller-pair)))
             (message (format "Search returns: %s" (symbol-name caller)))
 
-            ;; prevent infinite loops
-            ;; (if-let ((sub-caller-map (map-elt call-graph--internal-cache caller)))
-            ;;     (unless (call-graph--reachable-p caller seen-callers)
-            ;;       (map-put caller-map caller sub-caller-map)
-            ;;       (push caller seen-callers))
-
-            ;; Since Circular-Reference detected isn't ready yet
-            ;; So make more radical moves again infinite loop
+            ;; prevent infinite loop
             (unless (map-elt call-graph--internal-cache caller)
-              (let (sub-caller-map)
-                (setq sub-caller-map (call-graph--make-node))
+              (let ((sub-caller-map (call-graph--make-node)))
                 (map-put caller-map caller sub-caller-map)
                 (map-put call-graph--internal-cache caller sub-caller-map)
                 (map-put call-graph--location-cache caller location))))))
 
       ;; recursively find callers.
       (seq-doseq (caller (map-keys caller-map))
-        (call-graph--find-caller-map caller next-depth seen-callers))
+        (call-graph--find-caller-map caller next-depth))
 
       ;; return top-level caller-map.
       caller-map)))
@@ -260,32 +229,49 @@ DEPTH is the depth of caller-map."
   (when-let ((hierarchy (hierarchy-new))
              (caller-map
               (and func depth (call-graph--find-caller-map func depth))))
+    (setq call-graph--current-depth 0)
     (call-graph--display hierarchy func caller-map)
-    (setq call-graph--hierarchy hierarchy
-          call-graph--current-depth depth)))
+    (setq call-graph--hierarchy hierarchy)))
 
 ;;;###autoload
 (defun call-graph (&optional depth)
   "Generate `call-graph' for function at point.
 DEPTH is the depth of caller-map."
-  (interactive "p")
+  (interactive)
   (save-excursion
     (when-let ((func (symbol-at-point))
                (depth (or depth call-graph-initial-max-depth)))
-      (setq call-graph--switch-window-p t)
+      (setq call-graph--internal-cache nil)
+      (if (eq major-mode 'call-graph-mode)
+          (setq call-graph--switch-window-p nil)
+        (setq call-graph--switch-window-p t))
       (if (> depth call-graph-initial-max-depth)
           (call-graph--create func depth)
         (call-graph--create func call-graph-initial-max-depth)))))
 
-(defun call-graph-expand (&optional expand-depth)
-  "Expand `call-graph' by EXPAND-DEPTH."
+(defun call-graph-expand (&optional level)
+  "Expand `call-graph' by LEVEL."
   (interactive "p")
-  (when-let ((expand-depth (or expand-depth 1))
-             (depth (+ call-graph--current-depth expand-depth))
+  (when-let ((depth (+ call-graph--current-depth level))
              (func (and call-graph--hierarchy
                         (car (hierarchy-roots call-graph--hierarchy)))))
     (setq call-graph--switch-window-p nil)
     (call-graph--create func depth)))
+
+(defun call-graph-collapse (&optional level)
+  "Collapse `call-graph' by LEVEL."
+  (interactive "p")
+  (let ((level (- call-graph--current-depth level)))
+    (goto-char (point-min))
+    (cond
+     ((>= level call-graph--current-depth)
+      (tree-mode-expand-level call-graph--current-depth))
+     ((> level 0)
+      (tree-mode-expand-level level)
+      (setq call-graph--current-depth level))
+     ((<= level 0)
+      (tree-mode-expand-level 1)
+      (setq call-graph--current-depth 1)))))
 
 (defun call-graph-quit ()
   "Quit `call-graph'."
@@ -301,11 +287,11 @@ DEPTH is the depth of caller-map."
   (interactive)
   (tree-mode-expand-level 0))
 
-(defun call-graph-widget-collapse-all (&optional level)
-  "Iterate all widgets in buffer and close em at LEVEL."
+(defun call-graph-widget-collapse-all ()
+  "Iterate all widgets in buffer and close em."
   (interactive)
   (goto-char (point-min))
-  (tree-mode-expand-level (or level 1)))
+  (tree-mode-expand-level 1))
 
 (defun call-graph-visit-file-at-point ()
   "Visit occurrence on the current line."
@@ -347,8 +333,9 @@ DEPTH is the depth of caller-map."
     (define-key map (kbd "d") 'call-graph-display-file-at-point)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
     (define-key map (kbd "+") 'call-graph-expand)
+    (define-key map (kbd "_") 'call-graph-collapse)
+    (define-key map (kbd "g") 'call-graph)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
-    (define-key map (kbd "g")  nil) ; nothing to revert
     map)
   "Keymap for `call-graph' major mode.")
 
