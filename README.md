@@ -79,9 +79,9 @@ Lots more need to be improved.
 # Features
 
 - [x] Navigate to the caller file location.
-- [x] Use call-graph cache data to improve performance.
+- [ ] Use call-graph cache data to improve performance.
 - [x] Support filter when searching for callers.
-- [ ] Incrementally generate sub caller.
+- [x] Incrementally generate sub caller.
 - [ ] Support mark sub caller tree as negtive match.
 - [ ] Add font to distinguish between active/non-active caller.
 - [ ] Support persistence of call-graph cache data.

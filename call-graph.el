@@ -66,33 +66,31 @@
   :type 'list
   :group 'call-graph)
 
-(defconst call-graph--key-to-depth "*current-depth*"
-  "The key to get current depth of call graph.")
+(defcustom call-graph-display-file t
+  "Non-nil means display file in another window while moving from one field to another in `call-graph'."
+  :type 'boolean
+  :group 'call-graph)
 
-(defconst call-graph--key-to-caller-location "*caller-location*"
-  "The key to get caller location.")
+(defvar call-graph--current-depth 0
+  "The current depth of call graph.")
+
+(defvar call-graph--switch-window-p t
+  "Non-nil means switch to `call-graph' window.")
 
 ;; use hash-table as the building blocks for tree
 (defun call-graph--make-node ()
   "Serve as tree node."
   (make-hash-table :test 'equal))
 
+;; Refactor with cl-defstruct later on.
 (defvar call-graph--internal-cache (call-graph--make-node)
   "The internal cache of call graph.")
 
-;; Refactor with cl-defstruct later on.
 (defvar call-graph--location-cache (call-graph--make-node)
   "The caller locations map.")
 
-(defcustom call-graph-termination-list '("main")
-  "Call-graph stops when seeing symbols from this list."
-  :type 'list
-  :group 'call-graph)
-
-(defcustom call-graph-display-file-at-point t
-  "Non-nil means display file in another window while moving from one field to another in `call-graph'."
-  :type 'boolean
-  :group 'call-graph)
+(defvar call-graph--hierarchy (hierarchy-new)
+  "The hierarchy used by call-graph.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -102,23 +100,6 @@
   "Generate ‘*call-graph*’ buffer."
   (let ((buffer-name "*call-graph*"))
     (get-buffer-create buffer-name)))
-
-(defun call-graph--built-in-keys-p (key)
-  "Return non-nil if KEY is not one of built-in keys."
-  (member key (list
-               call-graph--key-to-depth
-               call-graph--key-to-caller-location)))
-
-(defun call-graph--find-callers-in-cache (func)
-  "Given a FUNC, find caller-map of it from cache."
-  (when-let ((caller-map (map-elt call-graph--internal-cache func))
-             (has-callers
-              (not
-               (map-empty-p
-                (map-remove
-                 (lambda (key _) (call-graph--built-in-keys-p key))
-                 caller-map)))))
-    caller-map))
 
 (defun call-graph--find-caller (reference)
   "Given a REFERENCE, return the caller as (caller . location)."
@@ -173,50 +154,68 @@ ITEM is parent of NODE, NODE should be a hash-table."
         (when (hash-table-p (cdr map-pair))
           (queue-enqueue queue map-pair))))))
 
+(defun call-graph--reachable-p (func caller-list)
+  "Starting from FUNC, Check if there's a way to reach anyone from CALLER-LIST.
+This is used to check circular reference."
+  (let ((caller-map (map-elt call-graph--internal-cache func)))
+    (catch 'reachable
+      (call-graph--walk-tree-in-bfs-order
+       func caller-map
+       (lambda (_ node)
+         (when (hash-table-p node)
+           (seq-doseq (child (map-keys node))
+             (when (member child caller-list)
+               (message
+                "Circular-Reference detected: %s references %s, while %s references %s too."
+                child func func child)
+               (throw 'reachable t))))))
+      ;; not reachable
+      nil)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Function
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun call-graph--create (item)
-  "Construct `call-graph' tree.
-ITEM is parent of root, ROOT should be a hash-table."
-  (let ((caller-visited call-graph-termination-list) root)
-    (push (symbol-name item) caller-visited)
-    (unless (setq root (call-graph--find-callers-in-cache item))
-      ;; Not found in internal-cache
-      (setq root (call-graph--make-node))
-      (map-put call-graph--internal-cache item root)
-      (map-put root call-graph--key-to-depth 0)
-      ;; (map-put root call-graph--key-to-caller-location location)
-      (catch 'exceed-max-depth
-        (call-graph--walk-tree-in-bfs-order
-         item root
-         (lambda (parent node)
-           (when (hash-table-p node)
-             (let ((depth (map-elt node call-graph--key-to-depth 0)))
-               (map-delete node call-graph--key-to-depth)
-               (when (> depth call-graph-initial-max-depth) (throw 'exceed-max-depth t))
+(defun call-graph--hierarchy-display (hierarchy)
+  "Display call graph in HIERARCHY."
+  (let (hierarchy-buffer)
+    (setq hierarchy-buffer
+          (hierarchy-tree-display
+           hierarchy
+           (lambda (tree-item _)
+             (let* ((caller (symbol-name tree-item))
+                    (location (map-elt call-graph--location-cache tree-item)))
+               ;; use propertize to avoid this error => Attempt to modify read-only object
+               ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
+               (insert (propertize caller 'caller-location location))))
+           (call-graph--get-buffer)))
+    (when call-graph--switch-window-p
+      (switch-to-buffer-other-window hierarchy-buffer))
+    (call-graph-mode)
+    (call-graph-widget-expand-all)))
 
-               (seq-doseq (reference (call-graph--find-references parent))
-                 (when-let ((is-vallid reference)
-                            (caller-pair (call-graph--find-caller reference))
-                            (location (cdr caller-pair))
-                            (caller (car caller-pair))
-                            (caller-map (call-graph--make-node))
-                            (is-new (not (member caller caller-visited))))
-                   (message (format "Search returns: %s" (symbol-name caller)))
-                   (push caller caller-visited)
-                   (map-put call-graph--internal-cache caller caller-map)
-                   (map-put node caller caller-map)
-                   (map-put caller-map call-graph--key-to-depth (1+ depth))
-                   (map-put caller-map call-graph--key-to-caller-location location)))))))))
-    root))
+(defun call-graph--display (hierarchy item caller-map)
+  "Prepare data and display `call-graph' in HIERARCHY.
+ITEM is the root, CALLER-MAP should be a hash-table."
+  (let ((log (list)))
+    (call-graph--walk-tree-in-bfs-order
+     item caller-map
+     (lambda (parent node)
+       (when (hash-table-p node)
+         (seq-doseq (child (map-keys node))
+           (hierarchy-add-tree hierarchy child (lambda (item) (when (eq item child) parent)))
+           (push
+            (concat "insert childe " (symbol-name child)
+                    " under parent " (symbol-name parent)) log)))))
+    (call-graph--hierarchy-display hierarchy)
+    (seq-doseq (rec (reverse log)) (message rec))))
 
-(defun call-graph--find-callers (func depth)
+(defun call-graph--find-caller-map (func depth &optional seen-callers)
   "Given a FUNC, return its caller-map.
-DEPTH is the depth of caller-map."
-  (when-let ((is-valid (> depth 0))
-             (next-depth (1- depth)))
+DEPTH is the depth of caller-map, SEEN-CALLERS prevent infinite loop."
+  (when-let ((next-depth (and (> depth 0) (1- depth)))
+             (seen-callers
+              (if seen-callers (push func seen-callers) (list func))))
     (let ((caller-map (map-elt call-graph--internal-cache func)))
 
       ;; search in internal-cache.
@@ -227,74 +226,66 @@ DEPTH is the depth of caller-map."
       ;; callers not found.
       (when (map-empty-p (map-keys caller-map))
         (seq-doseq (reference (call-graph--find-references func))
-          (when-let ((is-vallid reference)
-                     (caller-pair (call-graph--find-caller reference))
+          (when-let ((caller-pair
+                      (and reference (call-graph--find-caller reference)))
                      (caller (car caller-pair))
                      (location (cdr caller-pair)))
             (message (format "Search returns: %s" (symbol-name caller)))
-            (if-let ((sub-caller-map (map-elt call-graph--internal-cache caller)))
+
+            ;; prevent infinite loops
+            ;; (if-let ((sub-caller-map (map-elt call-graph--internal-cache caller)))
+            ;;     (unless (call-graph--reachable-p caller seen-callers)
+            ;;       (map-put caller-map caller sub-caller-map)
+            ;;       (push caller seen-callers))
+
+            ;; Since Circular-Reference detected isn't ready yet
+            ;; So make more radical moves again infinite loop
+            (unless (map-elt call-graph--internal-cache caller)
+              (let (sub-caller-map)
+                (setq sub-caller-map (call-graph--make-node))
                 (map-put caller-map caller sub-caller-map)
-              (setq sub-caller-map (call-graph--make-node))
-              (map-put caller-map caller sub-caller-map)
-              (map-put call-graph--internal-cache caller sub-caller-map)
-              (map-put call-graph--location-cache caller location)))))
+                (map-put call-graph--internal-cache caller sub-caller-map)
+                (map-put call-graph--location-cache caller location))))))
 
       ;; recursively find callers.
       (seq-doseq (caller (map-keys caller-map))
-        (call-graph--find-callers caller next-depth))
+        (call-graph--find-caller-map caller next-depth seen-callers))
 
       ;; return top-level caller-map.
       caller-map)))
 
-(defun call-graph--create2 (item)
-  "Construct `call-graph' tree.
-ITEM is parent of root, ROOT should be a hash-table."
-  (call-graph--find-callers item 3))
-
-(defun call-graph--display (hierarchy item root)
-  "Prepare data for display in HIERARCHY.
-ITEM is parent of root, ROOT should be a hash-table."
-  (let ((log (list)))
-    (call-graph--walk-tree-in-bfs-order
-     item root
-     (lambda (parent node)
-       (when (hash-table-p node)
-         (seq-doseq (child (map-keys node))
-           (unless (call-graph--built-in-keys-p child)
-             (hierarchy-add-tree hierarchy child (lambda (item) (when (eq item child) parent)))
-             (push
-              (concat "insert childe " (symbol-name child)
-                      " under parent " (symbol-name parent)) log))))))
-    (call-graph--hierarchy-display hierarchy)
-    (seq-doseq (rec (reverse log)) (message rec))))
-
-(defun call-graph--hierarchy-display (hierarchy)
-  "Display call graph in HIERARCHY."
-  (switch-to-buffer-other-window
-   (hierarchy-tree-display
-    hierarchy
-    (lambda (tree-item _)
-      (let* ((caller (symbol-name tree-item))
-             ;; (location (map-elt call-graph--location-cache tree-item))
-             (location (map-elt (map-elt call-graph--internal-cache tree-item)
-                                call-graph--key-to-caller-location))
-             )
-        ;; use propertize to avoid this error => Attempt to modify read-only object
-        ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
-        (insert (propertize caller 'caller-location location))))
-    (call-graph--get-buffer)))
-  (call-graph-mode)
-  (call-graph-widget-expand-all))
+(defun call-graph--create (func depth)
+  "Generate `call-graph' for FUNC.
+DEPTH is the depth of caller-map."
+  (when-let ((hierarchy (hierarchy-new))
+             (caller-map
+              (and func depth (call-graph--find-caller-map func depth))))
+    (call-graph--display hierarchy func caller-map)
+    (setq call-graph--hierarchy hierarchy
+          call-graph--current-depth depth)))
 
 ;;;###autoload
-(defun call-graph ()
-  "Generate a function `call-graph' for the function at point."
-  (interactive)
+(defun call-graph (&optional depth)
+  "Generate `call-graph' for function at point.
+DEPTH is the depth of caller-map."
+  (interactive "p")
   (save-excursion
-    (when-let ((target (symbol-at-point))
-               (root (call-graph--create target))
-               (hierarchy (hierarchy-new)))
-      (call-graph--display hierarchy target root))))
+    (when-let ((func (symbol-at-point))
+               (depth (or depth call-graph-initial-max-depth)))
+      (setq call-graph--switch-window-p t)
+      (if (> depth call-graph-initial-max-depth)
+          (call-graph--create func depth)
+        (call-graph--create func call-graph-initial-max-depth)))))
+
+(defun call-graph-expand (&optional expand-depth)
+  "Expand `call-graph' by EXPAND-DEPTH."
+  (interactive "p")
+  (when-let ((expand-depth (or expand-depth 1))
+             (depth (+ call-graph--current-depth expand-depth))
+             (func (and call-graph--hierarchy
+                        (car (hierarchy-roots call-graph--hierarchy)))))
+    (setq call-graph--switch-window-p nil)
+    (call-graph--create func depth)))
 
 (defun call-graph-quit ()
   "Quit `call-graph'."
@@ -355,6 +346,7 @@ ITEM is parent of root, ROOT should be a hash-table."
     (define-key map (kbd "q") 'call-graph-quit)
     (define-key map (kbd "d") 'call-graph-display-file-at-point)
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
+    (define-key map (kbd "+") 'call-graph-expand)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
     (define-key map (kbd "g")  nil) ; nothing to revert
     map)
@@ -373,7 +365,7 @@ ITEM is parent of root, ROOT should be a hash-table."
   (hack-dir-local-variables-non-file-buffer)
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
-  (when call-graph-display-file-at-point
+  (when call-graph-display-file
     (add-hook 'widget-move-hook (lambda () (call-graph-display-file-at-point))))
   (run-mode-hooks))
 
