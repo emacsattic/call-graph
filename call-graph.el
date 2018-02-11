@@ -8,7 +8,7 @@
 ;; Version: 0.0.4
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
-;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (queue "0.2"))
+;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -43,7 +43,6 @@
 
 ;;; Code:
 
-(require 'queue)
 (require 'hierarchy)
 (require 'tree-mode)
 
