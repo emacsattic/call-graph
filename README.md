@@ -94,4 +94,4 @@ Yes, please do! See CONTRIBUTING for guidelines.
 
 # License
 
-See [[file:LICENSE][LICENSE]]. Copyright (c) 2018 Huming Chen <chenhuming@gmail.com>
+Copyright (c) 2018 Huming Chen <chenhuming@gmail.com>
