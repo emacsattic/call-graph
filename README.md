@@ -89,10 +89,9 @@ Lots more need to be improved.
 - [ ] Support persistence of call-graph cache data.
 - [ ] Add async support for call-graph generation.
 
+# Contributing
+Yes, please do! See CONTRIBUTING for guidelines.
+
 # License
 
-MIT
-
-# Copyright
-
-Huming Chen <chenhuming@gmail.com>
+See LICENSE. Copyright (c) 2018 Huming Chen <chenhuming@gmail.com>
