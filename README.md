@@ -15,7 +15,6 @@ to envy those "modern" IDEs for this again.
 Clone the repo, then in your Emacs init file:
 
 ```lisp
-;; install hierarchy and tree-mode first
 (add-to-list 'load-path "/path/to/repo")
 (require 'call-graph)
 (call-graph) ;; to launch it
@@ -27,8 +26,8 @@ Clone the repo, then in your Emacs init file:
 * `hierarchy`
 * `tree-mode`
 
-Basicly `call-graph` just recursively use `Global` to find the caller of
-current function and eventually build up this `call-graph` tree.
+Basicly `call-graph` just recursively call `Global` to find caller of
+current function and eventually build up a `call-graph` tree.
 
 # Usage
 
