@@ -73,9 +73,6 @@
 (defvar call-graph--current-depth 0
   "The current depth of call graph.")
 
-(defvar call-graph--switch-window-p t
-  "Non-nil means switch to `call-graph' window.")
-
 ;; use hash-table as the building blocks for tree
 (defun call-graph--make-node ()
   "Serve as tree node."
@@ -144,18 +141,19 @@
 
 (defun call-graph--hierarchy-display (hierarchy)
   "Display call graph in HIERARCHY."
-  (let (hierarchy-buffer)
+  (let ((switch-buffer (not (eq major-mode 'call-graph-mode)))
+        hierarchy-buffer)
     (setq hierarchy-buffer
           (hierarchy-tree-display
            hierarchy
            (lambda (tree-item _)
-             (let* ((caller (symbol-name tree-item))
-                    (location (map-elt call-graph--location-cache tree-item)))
+             (let ((caller (symbol-name tree-item))
+                   (location (map-elt call-graph--location-cache tree-item)))
                ;; use propertize to avoid this error => Attempt to modify read-only object
                ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
                (insert (propertize caller 'caller-location location))))
            (call-graph--get-buffer)))
-    (when call-graph--switch-window-p
+    (when switch-buffer
       (switch-to-buffer-other-window hierarchy-buffer))
     (call-graph-mode)
     (call-graph-widget-expand-all)))
@@ -241,56 +239,13 @@ DEPTH is the depth of caller-map."
     (when-let ((func (symbol-at-point))
                (depth (or depth call-graph-initial-max-depth)))
       (setq call-graph--internal-cache nil)
-      (if (eq major-mode 'call-graph-mode)
-          (setq call-graph--switch-window-p nil)
-        (setq call-graph--switch-window-p t))
       (if (> depth call-graph-initial-max-depth)
           (call-graph--create func depth)
         (call-graph--create func call-graph-initial-max-depth)))))
 
-(defun call-graph-expand (&optional level)
-  "Expand `call-graph' by LEVEL."
-  (interactive "p")
-  (when-let ((depth (+ call-graph--current-depth level))
-             (func (and call-graph--hierarchy
-                        (car (hierarchy-roots call-graph--hierarchy)))))
-    (setq call-graph--switch-window-p nil)
-    (call-graph--create func depth)))
-
-(defun call-graph-collapse (&optional level)
-  "Collapse `call-graph' by LEVEL."
-  (interactive "p")
-  (let ((level (- call-graph--current-depth level)))
-    (goto-char (point-min))
-    (cond
-     ((>= level call-graph--current-depth)
-      (tree-mode-expand-level call-graph--current-depth))
-     ((> level 0)
-      (tree-mode-expand-level level)
-      (setq call-graph--current-depth level))
-     ((<= level 0)
-      (tree-mode-expand-level 1)
-      (setq call-graph--current-depth 1)))))
-
-(defun call-graph-quit ()
-  "Quit `call-graph'."
-  (interactive)
-  (kill-this-buffer))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Widget operation
+;; Call-Graph operation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun call-graph-widget-expand-all ()
-  "Iterate all widgets in buffer and expand em."
-  (interactive)
-  (tree-mode-expand-level 0))
-
-(defun call-graph-widget-collapse-all ()
-  "Iterate all widgets in buffer and close em."
-  (interactive)
-  (goto-char (point-min))
-  (tree-mode-expand-level 1))
 
 (defun call-graph-visit-file-at-point ()
   "Visit occurrence on the current line."
@@ -318,6 +273,58 @@ DEPTH is the depth of caller-map."
   (save-selected-window
     (call-graph-goto-file-at-point)))
 
+(defun call-graph-at-point (&optional depth)
+  "Genearete `call-graph' for symbol at point.
+DEPTH is the depth of caller-map."
+  (interactive)
+  (save-excursion
+    (when (get-char-property (point) 'button)
+      (forward-char 4))
+    (call-graph depth)))
+
+(defun call-graph-quit ()
+  "Quit `call-graph'."
+  (interactive)
+  (kill-this-buffer))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Widget operation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun call-graph-widget-expand-all ()
+  "Iterate all widgets in buffer and expand em."
+  (interactive)
+  (tree-mode-expand-level 0))
+
+(defun call-graph-widget-collapse-all ()
+  "Iterate all widgets in buffer and close em."
+  (interactive)
+  (goto-char (point-min))
+  (tree-mode-expand-level 1))
+
+(defun call-graph-expand (&optional level)
+  "Expand `call-graph' by LEVEL."
+  (interactive "p")
+  (when-let ((depth (+ call-graph--current-depth level))
+             (func (and call-graph--hierarchy
+                        (car (hierarchy-roots call-graph--hierarchy)))))
+    (call-graph--create func depth)))
+
+(defun call-graph-collapse (&optional level)
+  "Collapse `call-graph' by LEVEL."
+  (interactive "p")
+  (let ((level (- call-graph--current-depth level)))
+    (goto-char (point-min))
+    (cond
+     ((>= level call-graph--current-depth)
+      (tree-mode-expand-level call-graph--current-depth))
+     ((> level 0)
+      (tree-mode-expand-level level)
+      (setq call-graph--current-depth level))
+     ((<= level 0)
+      (tree-mode-expand-level 1)
+      (setq call-graph--current-depth 1)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mode
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,7 +340,7 @@ DEPTH is the depth of caller-map."
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
     (define-key map (kbd "+") 'call-graph-expand)
     (define-key map (kbd "_") 'call-graph-collapse)
-    (define-key map (kbd "g") 'call-graph)
+    (define-key map (kbd "g") 'call-graph-at-point)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
