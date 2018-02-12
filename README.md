@@ -24,6 +24,8 @@ Clone the repo, then in your Emacs init file:
 ## Dependencies
 
 * `GNU Global`
+* `hierarchy`
+* `tree-mode`
 
 Basicly `call-graph` just recursively use `Global` to find the caller of
 current function and eventually build up this `call-graph` tree.
