@@ -111,8 +111,10 @@
       (seq-doseq (caller callers)
         (let* ((full-caller (symbol-name (car caller))) ; class::method
                (caller-split (split-string full-caller "::"))
-               (short-caller (intern (seq-elt caller-split (1- (seq-length caller-split))))) ; method only
-               (func-caller-key (intern (concat (symbol-name func) " <- " (symbol-name short-caller))))) ; "callee <- caller" as key
+               (short-caller
+                (intern (seq-elt caller-split (1- (seq-length caller-split))))) ; method only
+               (func-caller-key
+                (intern (concat (symbol-name func) " <- " (symbol-name short-caller))))) ; "callee <- caller" as key
 
           ;; populate location data
           (push caller (map-elt (call-graph--locations call-graph) func-caller-key))
@@ -135,35 +137,35 @@ DEPTH is the depth of caller-map, SEEN-CALLERS prevent infinite loop."
             (push caller-pair caller-pairs)))
         (call-graph--add-callers call-graph func caller-pairs))
 
-      (seq-doseq (caller (map-elt (call-graph--callers call-graph) func))
-        (message "caller is %s" (symbol-name caller)))
-
       ;; recursively find callers.
       (seq-doseq (caller (map-elt (call-graph--callers call-graph) func))
         (call-graph--find-caller-map2 call-graph caller next-depth)))))
 
 (defun call-graph--display-caller-map2 (call-graph func &optional actual-depth)
   "In CALL-GRAPH, given FUNC, display its CALLER-MAP, calculate ACTUAL-DEPTH."
-  (when-let ((hierarchy (call-graph--hierarchy call-graph))
-             (callers (call-graph--callers call-graph))
-             (locations (call-graph--locations call-graph))
-             (actual-depth (or actual-depth 1))
-             (next-depth (1+ actual-depth)))
+  (when-let ((actual-depth (or actual-depth 1))
+             (next-depth (1+ actual-depth))
+             (hierarchy (call-graph--hierarchy call-graph))
+             (callers (map-elt (call-graph--callers call-graph) func))
+             (locations (call-graph--locations call-graph)))
 
     ;; populate hierarchy data.
     (seq-doseq (caller callers)
-      (let* ((func-caller-key (intern (concat (symbol-name func) "<-" (symbol-name caller))))
-             (caller-locations (map-elt locations func-caller-key)))
+      (when-let ((func-caller-key
+                  (intern (concat (symbol-name func) " <- " (symbol-name caller))))
+                 (caller-locations (map-elt locations func-caller-key)))
         (seq-doseq (caller-location caller-locations)
-          (let ((full-caller (car caller-location))
-                (location (cdr caller-location)))
+          (when-let ((full-caller (car caller-location))
+                     (location (cdr caller-location)))
             (put full-caller 'caller-location location)
-            (hierarchy-add-tree hierarchy full-caller (lambda (item) (when (eq item full-caller) func)))
-            (message "insert child %s under parent %s" (symbol-name full-caller) (symbol-name func))))))
+            (hierarchy-add-tree hierarchy full-caller
+                                (lambda (item) (when (eq item full-caller) func)))
+            (message "insert child %s under parent %s"
+                     (symbol-name full-caller) (symbol-name func))))))
 
     ;; calculate depth.
     (when (> actual-depth (call-graph--depth call-graph))
-      (setq (call-graph--depth call-graph) actual-depth))
+      (setf (call-graph--depth call-graph) actual-depth))
 
     ;; recursively populate callers.
     (seq-doseq (caller callers)
@@ -370,8 +372,8 @@ DEPTH is the depth of caller-map."
                (depth (or depth call-graph-initial-max-depth)))
       (setq call-graph--internal-cache nil)
       (if (> depth call-graph-initial-max-depth)
-          (call-graph--create2 func depth)
-        (call-graph--create2 func call-graph-initial-max-depth)))))
+          (call-graph--create func depth)
+        (call-graph--create func call-graph-initial-max-depth)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Call-Graph operation
@@ -478,7 +480,6 @@ DEPTH is the depth of caller-map."
 ;;;###autoload
 (define-derived-mode call-graph-mode special-mode "call-graph"
   "Major mode for viewing function's `call graph'.
-
 \\{call-graph-mode-map}"
   :group 'call-graph
   (buffer-disable-undo)
