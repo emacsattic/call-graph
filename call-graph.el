@@ -341,6 +341,7 @@ DEPTH is the depth of caller-map."
 ;;;###autoload
 (define-derived-mode call-graph-mode special-mode "call-graph"
   "Major mode for viewing function's `call graph'.
+
 \\{call-graph-mode-map}"
   :group 'call-graph
   (buffer-disable-undo)
