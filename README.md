@@ -82,8 +82,8 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
 
 # Screenshots
 
-![call-graph-demo-1.gif](https://github.com/beacoder/call-graph/blob/master/img/call-graph-demo-1.gif)
-![call-graph-demo-2.gif](https://github.com/beacoder/call-graph/blob/master/img/call-graph-demo-2.gif)
+![call-graph-demo-1.gif](img/call-graph-demo-1.gif)
+![call-graph-demo-2.gif](img/call-graph-demo-2.gif)
 
 # Limitations
 
@@ -101,7 +101,7 @@ Lots more need to be improved.
 - [ ] Add async support for call-graph generation.
 
 # Contributing
-Yes, please do! See ![CONTRIBUTING](https://github.com/beacoder/call-graph/blob/master/CONTRIBUTING.md) for guidelines.
+Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 # License
 
