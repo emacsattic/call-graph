@@ -47,7 +47,7 @@
 (require 'tree-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Definition
+;; Customizable
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup call-graph nil
@@ -76,6 +76,10 @@
   :risky t
   :group 'call-graph)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Definition
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defvar call-graph--current-depth 0
   "The current depth of call graph.")
 
@@ -92,7 +96,6 @@
 (cl-defstruct (call-graph
                (:constructor call-graph--make)
                (:conc-name call-graph--))
-  (depth 0)  ; depth of call graph
   (callers (make-hash-table :test 'equal)) ; map func to its callers
   (locations (make-hash-table :test 'equal))) ; map func <- caller to its locations
 
@@ -202,8 +205,7 @@ Which is used to retrieve location information."
         (call-graph--add-callers call-graph func caller-pairs))
 
       ;; calculate depth.
-      (when (> calculate-depth (call-graph--depth call-graph))
-        (setf (call-graph--depth call-graph) calculate-depth)
+      (when (> calculate-depth call-graph--current-depth)
         (setq call-graph--current-depth calculate-depth))
 
       ;; recursively search callers.
@@ -251,6 +253,8 @@ Which is used to retrieve location information."
   "Generate `call-graph' for FUNC.
 DEPTH is the depth of caller-map."
   (when-let ((call-graph call-graph--default-instance))
+    (setq call-graph--default-hierarchy (hierarchy-new)
+          call-graph--current-depth 0)
     (call-graph--search-callers call-graph func depth)
     (call-graph--build-hierarchy call-graph func depth)
     (call-graph--display-hierarchy call-graph)))
@@ -264,7 +268,6 @@ With prefix argument, regenerate reference data."
     (when-let ((func (symbol-at-point)))
       (when (or current-prefix-arg (not call-graph--default-instance))
         (setq call-graph--default-instance (call-graph-new)))
-      (setq call-graph--default-hierarchy (hierarchy-new))
       (call-graph--create func call-graph-initial-max-depth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -298,7 +301,7 @@ With prefix argument, regenerate reference data."
     (call-graph-goto-file-at-point)))
 
 (defun call-graph-at-point ()
-  "Genearete `call-graph' for symbol at point."
+  "Within buffer <*call-graph*>, generate new `call-graph' for symbol at point."
   (interactive)
   (save-excursion
     (when (get-char-property (point) 'button)
@@ -340,8 +343,6 @@ With prefix argument, regenerate reference data."
   (let ((level (- call-graph--current-depth level)))
     (goto-char (point-min))
     (cond
-     ((>= level call-graph--current-depth)
-      (tree-mode-expand-level call-graph--current-depth))
      ((> level 0)
       (tree-mode-expand-level level)
       (setq call-graph--current-depth level))
