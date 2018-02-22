@@ -22,6 +22,8 @@ Clone the repo, then in your Emacs init file:
 (call-graph) ;; to launch it
 ```
 
+Or install from [melpa](https://melpa.org/#/call-graph).
+
 ## Dependencies
 
 * `GNU Global`
