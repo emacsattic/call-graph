@@ -105,4 +105,4 @@ Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 # License
 
-Copyright (c) 2018 Huming Chen <chenhuming@gmail.com>
+See [LICENSE](LICENSE). Copyright (c) 2018 Huming Chen <chenhuming@gmail.com>
