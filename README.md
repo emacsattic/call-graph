@@ -1,5 +1,7 @@
 # call-graph - Library to generate call graph for cpp functions
 
+[![MELPA](https://melpa.org/packages/call-graph-badge.svg)](https://melpa.org/#/call-graph)
+
 Generate call graph for cpp functions.
 
 # Where does this library come from?
