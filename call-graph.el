@@ -76,6 +76,9 @@
 (defvar call-graph--default-instance nil
   "Default CALL-GRAPH instance.")
 
+(defvar call-graph--default-hierarchy nil
+  "Hierarchy to display call-graph.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,7 +87,6 @@
                (:constructor call-graph--make)
                (:conc-name call-graph--))
   (depth 0)  ; depth of call graph
-  (hierarchy (hierarchy-new)) ; hierarchy to display call-graph
   (callers (make-hash-table :test 'equal)) ; map func to its callers
   (locations (make-hash-table :test 'equal))) ; map func <- caller to its locations
 
@@ -198,7 +200,7 @@ Which is used to retrieve location information."
 (defun call-graph--build-hierarchy (call-graph func depth)
   "In CALL-GRAPH, given FUNC, build hierarchy deep to DEPTH level."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
-             (hierarchy (call-graph--hierarchy call-graph))
+             (hierarchy call-graph--default-hierarchy)
              (short-func (call-graph--extract-method-name func))
              (callers (map-elt (call-graph--callers call-graph) short-func (list))))
 
@@ -217,10 +219,9 @@ Which is used to retrieve location information."
         hierarchy-buffer)
     (setq hierarchy-buffer
           (hierarchy-tree-display
-           (call-graph--hierarchy call-graph)
+           call-graph--default-hierarchy
            (lambda (tree-item _)
-             (let* ((hierarchy (call-graph--hierarchy call-graph))
-                    (parent (hierarchy-parent hierarchy tree-item))
+             (let* ((parent (hierarchy-parent call-graph--default-hierarchy tree-item))
                     (func-caller-key (call-graph--get-func-caller-key parent tree-item))
                     (location (map-elt (call-graph--locations call-graph) func-caller-key))
                     (caller (symbol-name tree-item)))
@@ -244,12 +245,13 @@ DEPTH is the depth of caller-map."
 ;;;###autoload
 (defun call-graph ()
   "Generate `call-graph' for function at point.
-DEPTH is the depth of caller-map."
+With prefix argument, regenerate reference data."
   (interactive)
   (save-excursion
     (when-let ((func (symbol-at-point)))
       (when (or current-prefix-arg (not call-graph--default-instance))
         (setq call-graph--default-instance (call-graph-new)))
+      (setq call-graph--default-hierarchy (hierarchy-new))
       (call-graph--create func call-graph-initial-max-depth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -315,7 +317,7 @@ DEPTH is the depth of caller-map."
   "Expand `call-graph' by LEVEL."
   (interactive "p")
   (when-let ((call-graph call-graph--default-instance)
-             (hierarchy (call-graph--hierarchy call-graph))
+             (hierarchy call-graph--default-hierarchy)
              (depth (+ call-graph--current-depth level))
              (func (car (hierarchy-roots hierarchy))))
     (call-graph--create func depth)))
