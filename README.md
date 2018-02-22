@@ -101,7 +101,7 @@ Lots more need to be improved.
 - [ ] Add async support for call-graph generation.
 
 # Contributing
-Yes, please do! See CONTRIBUTING for guidelines.
+Yes, please do! See ![CONTRIBUTING](https://github.com/beacoder/call-graph/blob/master/CONTRIBUTING.md) for guidelines.
 
 # License
 
