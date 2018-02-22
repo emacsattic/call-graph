@@ -57,6 +57,12 @@ You could bind it to <kbd>C-c g</kbd>.
 
 # Customization
 
+Customize the location of the GNU GLOBAL binary.
+
+```
+    (setq call-graph-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
+```
+
 Specify the parse depth of the call-graph.
 default is 2, the more the depth is, the longer it takes.
 
@@ -67,7 +73,11 @@ default is 2, the more the depth is, the longer it takes.
 Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
 
 ```
-    (setq call-graph-filters '("grep -v \"Test/\"" "grep -v \"_SUITE/\""))
+    (dolist (filter '("grep -v \"Test/\""
+                    "grep -v \"_SUITE/\""
+                    "grep -v \"/test-src/\""
+                    "grep -v \"/TestPkg/\""))
+    (add-to-list 'call-graph-filters filter))
 ```
 
 # Screenshots

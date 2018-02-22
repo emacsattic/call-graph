@@ -60,7 +60,7 @@
   :type 'integer
   :group 'call-graph)
 
-(defcustom call-graph-filters nil
+(defcustom call-graph-filters '("grep -E \"\\.(cpp|cc):\"")
   "The filters used by `call-graph' when searching caller."
   :type 'list
   :group 'call-graph)
@@ -68,6 +68,12 @@
 (defcustom call-graph-display-file t
   "Non-nil means display file in another window while moving from one field to another in `call-graph'."
   :type 'boolean
+  :group 'call-graph)
+
+(defcustom call-graph-path-to-global nil
+  "If non-nil the directory to search global executables."
+  :type '(choice (const :tag "Unset" nil) directory)
+  :risky t
   :group 'call-graph)
 
 (defvar call-graph--current-depth 0
@@ -131,6 +137,12 @@ Which is used to retrieve location information."
   (let ((buffer-name "*call-graph*"))
     (get-buffer-create buffer-name)))
 
+(defun call-graph--get-path-to-global ()
+  "Return path to program GNU GLOBAL."
+  (if call-graph-path-to-global
+      (expand-file-name "global" call-graph-path-to-global)
+    "global"))
+
 (defun call-graph--find-caller (reference)
   "Given a REFERENCE, return the caller as (caller . location)."
   (when-let ((tmp-val (split-string reference ":"))
@@ -155,7 +167,8 @@ Which is used to retrieve location information."
 (defun call-graph--find-references (func)
   "Given a FUNC, return all references as a list."
   (let ((command
-         (format "global -a --result=grep -r %s | grep -E \"\\.(cpp|cc):\""
+         (format "%s -a --result=grep -r %s"
+                 (call-graph--get-path-to-global)
                  (shell-quote-argument (symbol-name func))))
         (filter-separator " | ")
         command-filter command-out-put)
@@ -284,9 +297,8 @@ With prefix argument, regenerate reference data."
   (save-selected-window
     (call-graph-goto-file-at-point)))
 
-(defun call-graph-at-point (&optional depth)
-  "Genearete `call-graph' for symbol at point.
-DEPTH is the depth of caller-map."
+(defun call-graph-at-point ()
+  "Genearete `call-graph' for symbol at point."
   (interactive)
   (save-excursion
     (when (get-char-property (point) 'button)
