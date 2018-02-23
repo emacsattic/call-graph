@@ -94,6 +94,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (cl-defstruct (call-graph
+               (:constructor nil)
                (:constructor call-graph--make)
                (:conc-name call-graph--))
   (callers (make-hash-table :test 'equal)) ; map func to its callers
