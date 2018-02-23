@@ -188,7 +188,8 @@ Which is used to retrieve location information."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun call-graph--search-callers (call-graph func depth &optional calculate-depth)
-  "In CALL-GRAPH, given FUNC, search deep to level of lesser one from DEPTH and CALCULATE-DEPTH."
+  "In CALL-GRAPH, given FUNC, search callers deep to level DEPTH.
+CALCULATE-DEPTH is used to calculate actual depth."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
              (calculate-depth (or calculate-depth 1))
              (next-calculate-depth (1+ calculate-depth))
@@ -266,7 +267,7 @@ With prefix argument, regenerate reference data."
   (interactive)
   (save-excursion
     (when-let ((func (symbol-at-point)))
-      (when (or current-prefix-arg (not call-graph--default-instance))
+      (when (or current-prefix-arg (null call-graph--default-instance))
         (setq call-graph--default-instance (call-graph-new)))
       (call-graph--create func call-graph-initial-max-depth))))
 
