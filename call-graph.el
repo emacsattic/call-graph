@@ -168,9 +168,11 @@ Which is used to retrieve location information."
     (when-let ((locations (call-graph--locations call-graph)))
       (or
        (map-elt locations (call-graph--get-func-caller-key func caller))
-       (map-elt locations (call-graph--get-func-caller-key caller func))
+       (map-elt locations (call-graph--get-func-caller-key func (call-graph--extract-method-name caller)))
        (map-elt locations (call-graph--get-func-caller-key (call-graph--extract-method-name func) caller))
-       (map-elt locations (call-graph--get-func-caller-key caller (call-graph--extract-method-name func)))))))
+       (map-elt locations (call-graph--get-func-caller-key caller func))
+       (map-elt locations (call-graph--get-func-caller-key caller (call-graph--extract-method-name func)))
+       (map-elt locations (call-graph--get-func-caller-key (call-graph--extract-method-name caller) func))))))
 
 (defun call-graph--get-buffer ()
   "Generate ‘*call-graph*’ buffer."
