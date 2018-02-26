@@ -29,6 +29,7 @@ Or install from [melpa](https://melpa.org/#/call-graph).
 * `GNU Global`
 * `hierarchy`
 * `tree-mode`
+* `ivy`
 
 Basicly `call-graph` just recursively call `Global` to find caller of
 current function and eventually build up a `call-graph` tree.
