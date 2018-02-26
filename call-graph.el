@@ -207,8 +207,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
       ;; callers not found.
       (unless callers
         (seq-doseq (reference (call-graph--find-references short-func))
-          (when-let ((caller-pair
-                      (and reference (call-graph--find-caller reference))))
+          (when-let ((caller-pair (and reference (call-graph--find-caller reference))))
             (message (format "Search returns: %s" (symbol-name (car caller-pair))))
             (push caller-pair caller-pairs)))
         (call-graph--add-callers call-graph func caller-pairs)
@@ -259,10 +258,9 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (call-graph-mode)
     (call-graph-widget-expand-all)))
 
-(defun call-graph--create (func depth)
-  "Generate `call-graph' for FUNC.
-DEPTH is the depth of caller-map."
-  (when-let ((call-graph call-graph--default-instance))
+(defun call-graph--create (call-graph func depth)
+  "Generate CALL-GRAPH for FUNC, DEPTH is the depth of caller-map."
+  (when (and call-graph func depth)
     (setq call-graph--default-hierarchy (hierarchy-new)
           call-graph--current-depth 0)
     (call-graph--search-callers call-graph func depth)
@@ -278,7 +276,7 @@ With prefix argument, regenerate reference data."
     (when-let ((func (symbol-at-point)))
       (when (or current-prefix-arg (null call-graph--default-instance))
         (setq call-graph--default-instance (call-graph-new)))
-      (call-graph--create func call-graph-initial-max-depth))))
+      (call-graph--create call-graph--default-instance func call-graph-initial-max-depth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Call-Graph Operations
@@ -346,7 +344,7 @@ With prefix argument, regenerate reference data."
              (hierarchy call-graph--default-hierarchy)
              (depth (+ call-graph--current-depth level))
              (func (car (hierarchy-roots hierarchy))))
-    (call-graph--create func depth)))
+    (call-graph--create call-graph func depth)))
 
 (defun call-graph-collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
