@@ -274,7 +274,8 @@ With prefix argument, discard cached data and re-generate reference data."
   (interactive)
   (when-let ((func
               (if (use-region-p)
-                  (intern (buffer-substring-no-properties (region-beginning) (region-end)))
+                  (prog1 (intern (buffer-substring-no-properties (region-beginning) (region-end)))
+                    (deactivate-mark))
                 (symbol-at-point))))
     (when (or current-prefix-arg (null call-graph--default-instance))
       (setq call-graph--default-instance (call-graph-new)))
