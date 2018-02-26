@@ -278,7 +278,7 @@ With prefix argument, discard cached data and re-generate reference data."
                 (symbol-at-point))))
     (when (or current-prefix-arg (null call-graph--default-instance))
       (setq call-graph--default-instance (call-graph-new)))
-    (save-excursion
+    (save-mark-and-excursion
       (call-graph--create call-graph--default-instance func call-graph-initial-max-depth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,7 +301,7 @@ With prefix argument, discard cached data and re-generate reference data."
 (defun call-graph-goto-file-at-point ()
   "Go to the occurrence on the current line."
   (interactive)
-  (save-excursion
+  (save-mark-and-excursion
     (when (get-char-property (point) 'button)
       (forward-char 4))
     (call-graph-visit-file-at-point)))
@@ -315,7 +315,7 @@ With prefix argument, discard cached data and re-generate reference data."
 (defun call-graph-at-point ()
   "Within buffer <*call-graph*>, generate new `call-graph' for symbol at point."
   (interactive)
-  (save-excursion
+  (save-mark-and-excursion
     (when (get-char-property (point) 'button)
       (forward-char 4))
     (call-graph)))
