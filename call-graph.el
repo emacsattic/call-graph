@@ -269,13 +269,16 @@ CALCULATE-DEPTH is used to calculate actual depth."
 
 ;;;###autoload
 (defun call-graph ()
-  "Generate `call-graph' for function at point.
-With prefix argument, regenerate reference data."
+  "Generate `call-graph' for function at point or function in active selection.
+With prefix argument, discard cached data and re-generate reference data."
   (interactive)
-  (save-excursion
-    (when-let ((func (symbol-at-point)))
-      (when (or current-prefix-arg (null call-graph--default-instance))
-        (setq call-graph--default-instance (call-graph-new)))
+  (when-let ((func
+              (if (use-region-p)
+                  (intern (buffer-substring-no-properties (region-beginning) (region-end)))
+                (symbol-at-point))))
+    (when (or current-prefix-arg (null call-graph--default-instance))
+      (setq call-graph--default-instance (call-graph-new)))
+    (save-excursion
       (call-graph--create call-graph--default-instance func call-graph-initial-max-depth))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
