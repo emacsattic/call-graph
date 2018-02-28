@@ -91,7 +91,6 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
 
 ![call-graph-demo-1.gif](img/call-graph-demo-1.gif)
 ![call-graph-demo-2.gif](img/call-graph-demo-2.gif)
-![call-graph-demo-3.gif](img/call-graph-demo-3.gif)
 
 # Limitations
 
