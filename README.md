@@ -54,10 +54,11 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "q") 'call-graph-quit)
     (define-key map (kbd "+") 'call-graph-expand)
     (define-key map (kbd "_") 'call-graph-collapse)
-    (define-key map (kbd "o") 'call-graph-display-file-at-point)
+    (define-key map (kbd "o") 'call-graph-goto-file-at-point)
     (define-key map (kbd "g") 'call-graph-at-point)
     (define-key map (kbd "d") 'call-graph-remove-caller)
     (define-key map (kbd "f") 'call-graph-reset-caller-filter)
+    (define-key map (kbd "l") 'call-graph-select-caller-location)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
 ```
 
@@ -90,6 +91,7 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
 
 ![call-graph-demo-1.gif](img/call-graph-demo-1.gif)
 ![call-graph-demo-2.gif](img/call-graph-demo-2.gif)
+![call-graph-demo-2.gif](img/call-graph-demo-3.gif)
 
 # Limitations
 
