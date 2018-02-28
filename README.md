@@ -52,11 +52,12 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "p") 'widget-backward)
     (define-key map (kbd "n") 'widget-forward)
     (define-key map (kbd "q") 'call-graph-quit)
-    (define-key map (kbd "d") 'call-graph-display-file-at-point)
-    (define-key map (kbd "o") 'call-graph-goto-file-at-point)
     (define-key map (kbd "+") 'call-graph-expand)
     (define-key map (kbd "_") 'call-graph-collapse)
-    (define-key map (kbd "g") 'call-graph)
+    (define-key map (kbd "o") 'call-graph-display-file-at-point)
+    (define-key map (kbd "g") 'call-graph-at-point)
+    (define-key map (kbd "d") 'call-graph-remove-caller)
+    (define-key map (kbd "f") 'call-graph-reset-caller-filter)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
 ```
 
@@ -100,8 +101,7 @@ Lots more need to be improved.
 - [x] Navigate to the caller file location.
 - [x] Support filter when searching for callers.
 - [x] Incrementally generate sub caller.
-- [ ] Support mark sub caller tree as negtive match.
-- [ ] Add font to distinguish between active/non-active caller.
+- [x] Support manually remove wrong callers.
 - [ ] Support persistence of call-graph cache data.
 - [ ] Add async support for call-graph generation.
 
