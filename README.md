@@ -57,7 +57,6 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "o") 'call-graph-goto-file-at-point)
     (define-key map (kbd "g") 'call-graph-at-point)
     (define-key map (kbd "d") 'call-graph-remove-caller)
-    (define-key map (kbd "f") 'call-graph-reset-caller-filter)
     (define-key map (kbd "l") 'call-graph-select-caller-location)
     (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
 ```
