@@ -184,6 +184,9 @@ e.g: class::method => method."
         ;; TODO: leave only hooks on which 'which-function-mode depends
         ;; (set (make-local-variable 'c++-mode-hook) nil)
         (c++-mode)
+        (goto-char (point-min))
+        (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
+          (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
         (which-function-mode t)
         (goto-char (point-min))
         (forward-line (1- line-nb))
