@@ -185,7 +185,8 @@ e.g: class::method => method."
         ;; (set (make-local-variable 'c++-mode-hook) nil)
         (c++-mode)
         (which-function-mode t)
-        (forward-line line-nb)
+        (goto-char (point-min))
+        (forward-line (1- line-nb))
         (setq caller (which-function)))
       (when caller
         (cons (intern caller) location)))))
