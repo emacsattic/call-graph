@@ -178,7 +178,7 @@ e.g: class::method => method."
              (is-valid-file (file-exists-p file-name))
              (is-valid-nb (integerp line-nb)))
     (let ((location (concat file-name ":" line-nb-str))
-          caller)
+          (caller nil))
       (with-temp-buffer
         (insert-file-contents-literally file-name)
         ;; TODO: leave only hooks on which 'which-function-mode depends
