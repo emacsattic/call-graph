@@ -173,6 +173,14 @@ e.g: class::method => method."
       (expand-file-name "global" call-graph-path-to-global)
     "global"))
 
+(defun call-graph--dwim-at-point ()
+  "If there's an active selection, return that.
+Otherwise, get the symbol at point."
+  (if (use-region-p)
+      (prog1 (intern (buffer-substring-no-properties (region-beginning) (region-end)))
+        (deactivate-mark))
+    (symbol-at-point)))
+
 (defun call-graph--visit-function (func-location)
   "Visit function location FUNC-LOCATION."
   (when-let ((temp-split (split-string func-location ":"))
@@ -303,7 +311,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (call-graph--build-hierarchy call-graph func depth)
     (call-graph--display-hierarchy)))
 
-(defun call-graph--init ()
+(defun call-graph--initialize ()
   "Initialize data for `call-graph'."
   (when (or current-prefix-arg (null call-graph--default-instance))
     (setq call-graph--default-instance (call-graph-new))) ; clear cached reference
@@ -318,13 +326,9 @@ CALCULATE-DEPTH is used to calculate actual depth."
 (defun call-graph (&optional func)
   "Generate `call-graph' for FUNC / func-at-point / func-in-active-rigion.
 With prefix argument, discard cached data and re-generate reference data."
-  (interactive)
-  (when-let ((func
-              (or func (if (use-region-p)
-                           (prog1 (intern (buffer-substring-no-properties (region-beginning) (region-end)))
-                             (deactivate-mark))
-                         (symbol-at-point)))))
-    (call-graph--init)
+  (interactive (list (call-graph--dwim-at-point)))
+  (when func
+    (call-graph--initialize)
     (let ((call-graph call-graph--default-instance))
 
       (when-let ((file-name (buffer-file-name))
