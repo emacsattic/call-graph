@@ -83,7 +83,18 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
                     "grep -v \"_SUITE/\""
                     "grep -v \"/test-src/\""
                     "grep -v \"/TestPkg/\""))
-    (add-to-list 'call-graph-filters filter))
+    (add-to-list 'call-graph-search-filters filter))
+```
+
+Persist caller-relations with session.
+
+```
+    (add-hook 'kill-emacs-hook #'call-graph-prepare-persistent-data)
+
+    (setq desktop-globals-to-save
+        (append '((call-graph-persist-caller-filters . 1000)
+                  tags-file-name
+                  tags-table-list)))
 ```
 
 # Screenshots
@@ -102,7 +113,7 @@ Lots more need to be improved.
 - [x] Support filter when searching for callers.
 - [x] Incrementally generate sub caller.
 - [x] Support manually remove wrong callers.
-- [ ] Support persistence of call-graph cache data.
+- [x] Support persistence of call-graph cache data.
 - [ ] Add async support for call-graph generation.
 
 # Contributing
