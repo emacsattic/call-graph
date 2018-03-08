@@ -1,8 +1,8 @@
-# call-graph - Library to generate call graph for cpp functions
+# call-graph - Library to generate call graph for c/c++ functions
 
 [![MELPA](https://melpa.org/packages/call-graph-badge.svg)](https://melpa.org/#/call-graph)
 
-Generate call graph for cpp functions.
+Generate call graph for c/c++ functions.
 
 # Where does this library come from?
 
@@ -36,7 +36,7 @@ current function and eventually build up a `call-graph` tree.
 
 # Usage
 
-Place your cursor in the cpp function which you want to generate
+Place your cursor in the c/c++ function which you want to generate
 call-graph for and execute call-graph.
 You could bind it to <kbd>C-c g</kbd>.
 

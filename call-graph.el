@@ -1,4 +1,4 @@
-;;; call-graph.el --- Library to generate call graph for cpp functions  -*- lexical-binding: t; -*-
+;;; call-graph.el --- Library to generate call graph for c/c++ functions  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2018 Huming Chen
 
@@ -27,7 +27,7 @@
 
 ;;; Commentary:
 
-;; Library to generate call graph for cpp functions.
+;; Library to generate call graph for c/c++ functions.
 
 ;;; Install:
 
@@ -62,7 +62,7 @@
   :type 'integer
   :group 'call-graph)
 
-(defcustom call-graph-search-filters '("grep -E \"\\.(cpp|cc):\"")
+(defcustom call-graph-search-filters '("grep -E \"\\.(cpp|cc|c):\"")
   "The filters used by `call-graph' when searching caller."
   :type 'list
   :group 'call-graph)
