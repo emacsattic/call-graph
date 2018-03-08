@@ -237,12 +237,9 @@ Otherwise, get the symbol at point."
 ;; Core Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun call-graph--search-callers (call-graph func depth &optional calculate-depth)
-  "In CALL-GRAPH, given FUNC, search callers deep to level DEPTH.
-CALCULATE-DEPTH is used to calculate actual depth."
+(defun call-graph--search-callers (call-graph func depth)
+  "In CALL-GRAPH, given FUNC, search callers deep to level DEPTH."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
-             (calculate-depth (or calculate-depth 1))
-             (next-calculate-depth (1+ calculate-depth))
              (short-func (call-graph--extract-method-name func)))
     (let ((caller-pairs (list))
           (callers (map-elt (call-graph--callers call-graph) short-func (list))))
@@ -256,17 +253,16 @@ CALCULATE-DEPTH is used to calculate actual depth."
         (call-graph--add-callers call-graph func caller-pairs)
         (setq callers (map-elt (call-graph--callers call-graph) short-func (list))))
 
-      ;; calculate depth.
-      (when (> calculate-depth call-graph--current-depth)
-        (setq call-graph--current-depth calculate-depth))
-
       ;; recursively search callers.
       (seq-doseq (caller callers)
-        (call-graph--search-callers call-graph caller next-depth next-calculate-depth)))))
+        (call-graph--search-callers call-graph caller next-depth)))))
 
-(defun call-graph--build-hierarchy (call-graph func depth)
-  "In CALL-GRAPH, given FUNC, build hierarchy deep to DEPTH level."
+(defun call-graph--build-hierarchy (call-graph func depth &optional calculate-depth)
+  "In CALL-GRAPH, given FUNC, build hierarchy deep to level DEPTH.
+CALCULATE-DEPTH is used to calculate actual depth."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
+             (calculate-depth (or calculate-depth 1))
+             (next-calculate-depth (1+ calculate-depth))
              (hierarchy call-graph--default-hierarchy)
              (short-func (call-graph--extract-method-name func))
              (callers
@@ -275,12 +271,14 @@ CALCULATE-DEPTH is used to calculate actual depth."
 
     ;; populate hierarchy data.
     (seq-doseq (caller callers)
-      (hierarchy-add-tree hierarchy caller (lambda (item) (when (eq item caller) func)))
+      (hierarchy-add-tree
+       hierarchy caller
+       (lambda (item) (when (eq item caller) (put caller 'caller-depth calculate-depth) func)))
       (message "Insert child %s under parent %s" (symbol-name caller) (symbol-name func)))
 
     ;; recursively populate callers.
     (seq-doseq (caller callers)
-      (call-graph--build-hierarchy call-graph caller next-depth))))
+      (call-graph--build-hierarchy call-graph caller next-depth next-calculate-depth))))
 
 (defun call-graph--display-hierarchy ()
   "Display `call-graph' in hierarchy."
@@ -290,8 +288,12 @@ CALCULATE-DEPTH is used to calculate actual depth."
           (hierarchy-tree-display
            call-graph--default-hierarchy
            (lambda (tree-item _)
-             (let ((caller (symbol-name tree-item))
+             (let ((depth (get tree-item 'caller-depth))
+                   (caller (symbol-name tree-item))
                    (parent (or (hierarchy-parent call-graph--default-hierarchy tree-item) 'root-function)))
+
+               ;; calculate depth.
+               (and depth (> depth call-graph--current-depth) (setq call-graph--current-depth depth))
 
                ;; use propertize to avoid this error => Attempt to modify read-only object
                ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
