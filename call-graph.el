@@ -83,7 +83,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar cg-persist-caller-filters nil
-  "The alist form of `call-graph--caller-filters'.")
+  "The alist form of `cg--caller-filters'.")
 
 (defvar cg--caller-filters nil
   "The filters describing caller relations, used when building caller-map.")
