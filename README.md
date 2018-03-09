@@ -47,19 +47,19 @@ You could bind it to <kbd>C-c g</kbd>.
 # Keys
 
 ```lisp
-    (define-key map (kbd "e") 'call-graph-widget-expand-all)
-    (define-key map (kbd "c") 'call-graph-widget-collapse-all)
+    (define-key map (kbd "e") 'cg/widget-expand-all)
+    (define-key map (kbd "c") 'cg/widget-collapse-all)
     (define-key map (kbd "p") 'widget-backward)
     (define-key map (kbd "n") 'widget-forward)
-    (define-key map (kbd "q") 'call-graph-quit)
-    (define-key map (kbd "+") 'call-graph-expand)
-    (define-key map (kbd "_") 'call-graph-collapse)
-    (define-key map (kbd "o") 'call-graph-goto-file-at-point)
-    (define-key map (kbd "g") 'call-graph-at-point)
-    (define-key map (kbd "d") 'call-graph-remove-caller)
-    (define-key map (kbd "l") 'call-graph-select-caller-location)
-    (define-key map (kbd "r") 'call-graph-reset-caller-filter)
-    (define-key map (kbd "<RET>") 'call-graph-goto-file-at-point)
+    (define-key map (kbd "q") 'cg/quit)
+    (define-key map (kbd "+") 'cg/expand)
+    (define-key map (kbd "_") 'cg/collapse)
+    (define-key map (kbd "o") 'cg/goto-file-at-point)
+    (define-key map (kbd "g") 'cg/at-point)
+    (define-key map (kbd "d") 'cg/remove-caller)
+    (define-key map (kbd "l") 'cg/select-caller-location)
+    (define-key map (kbd "r") 'cg/reset-caller-filter)
+    (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
 ```
 
 # Customization
@@ -67,14 +67,14 @@ You could bind it to <kbd>C-c g</kbd>.
 Customize the location of the GNU GLOBAL binary.
 
 ```
-    (setq call-graph-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
+    (setq cg-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
 ```
 
 Specify the parse depth of the call-graph.
 default is 2, the more the depth is, the longer it takes.
 
 ```
-    (setq call-graph-initial-max-depth 3)
+    (setq cg-initial-max-depth 3)
 ```
 
 Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
@@ -84,16 +84,16 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
                     "grep -v \"_SUITE/\""
                     "grep -v \"/test-src/\""
                     "grep -v \"/TestPkg/\""))
-    (add-to-list 'call-graph-search-filters filter))
+    (add-to-list 'cg-search-filters filter))
 ```
 
 Persist caller-relations with session.
 
 ```
-    (add-hook 'kill-emacs-hook #'call-graph-prepare-persistent-data)
+    (add-hook 'kill-emacs-hook #'cg/prepare-persistent-data)
 
     (setq desktop-globals-to-save
-        (append '((call-graph-persist-caller-filters . 1000)
+        (append '((cg-persist-caller-filters . 1000)
                   tags-file-name
                   tags-table-list)))
 ```
