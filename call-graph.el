@@ -319,7 +319,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (setq cg--default-instance (cg-new))) ; clear cached reference
 
   (when (null cg--caller-filters)
-    (if cg-persist-caller-filters ; load filtes from saved session
+    (if cg-persist-caller-filters ; load filters from saved session
         (setq cg--caller-filters (map-into cg-persist-caller-filters 'hash-table)
               cg-persist-caller-filters nil)
       (setq cg--caller-filters (make-hash-table :test #'equal)))))
