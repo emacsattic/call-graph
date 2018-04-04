@@ -24,8 +24,8 @@ repository. Follow the guidelines below to make sure everything goes smoothly.
 
 ### Naming
 
-- Use a `call-graph-` prefix for all public names.
-- Use a `call-graph--` prefix for all internal names.
+- Use a `cg-` prefix for all public names.
+- Use a `cg--` prefix for all internal names.
 
 ### Docstrings
 
