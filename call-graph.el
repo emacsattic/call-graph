@@ -97,6 +97,12 @@
 (defvar cg--default-hierarchy nil
   "Hierarchy to display call-graph.")
 
+(defvar cg--window-configuration nil
+  "The window configuration to be restored upon closing the buffer.")
+
+(defvar cg--selected-window nil
+  "The currently selected window.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data Structure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -331,15 +337,20 @@ With prefix argument, discard cached data and re-generate reference data."
   (interactive (list (cg--dwim-at-point)))
   (when func
     (cg--initialize)
-    (let ((call-graph cg--default-instance))
+    (let ((call-graph cg--default-instance)
+          (window-configuration (current-window-configuration))
+          (selected-window (frame-selected-window)))
 
       (when-let ((file-name (buffer-file-name))
                  (line-nb (line-number-at-pos))
                  (location (concat file-name ":" (number-to-string line-nb))))
-        (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location))) ; save root function location
+        ;; save root function location
+        (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location)))
 
       (save-mark-and-excursion
-       (cg--create call-graph func cg-initial-max-depth)))))
+       (cg--create call-graph func cg-initial-max-depth)
+       (setq cg--window-configuration window-configuration
+             cg--selected-window selected-window)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Call-Graph Operations
@@ -436,7 +447,13 @@ With prefix argument, discard whole caller filter."
 (defun cg/quit ()
   "Quit `call-graph'."
   (interactive)
-  (kill-this-buffer))
+  (when (eq major-mode 'call-graph-mode)
+    (setq major-mode nil)
+    (let ((configuration cg--window-configuration)
+          (selected-window cg--selected-window))
+      (kill-this-buffer)
+      (set-window-configuration configuration)
+      (select-window selected-window))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget Operations
