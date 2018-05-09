@@ -175,9 +175,9 @@ e.g: class::method => method."
 
 (defun cg--get-path-to-global ()
   "Return path to program GNU GLOBAL."
-  (if cg-path-to-global
-      (expand-file-name "global" cg-path-to-global)
-    "global"))
+  (let ((path (if cg-path-to-global (expand-file-name "global" cg-path-to-global) "global")))
+    (if (file-exists-p path) path
+      (error "Failed to find \"GNU GLOBAL\" in path %s" path))))
 
 (defun cg--dwim-at-point ()
   "If there's an active selection, return that.
