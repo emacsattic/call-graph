@@ -77,6 +77,12 @@ default is 2, the more the depth is, the longer it takes.
     (setq cg-initial-max-depth 3)
 ```
 
+Avoid truncating Imenu entries.
+
+```
+    (setq imenu-max-item-length "Unlimited")
+```
+
 Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
 
 ```
@@ -87,7 +93,7 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
     (add-to-list 'cg-search-filters filter))
 ```
 
-Persist caller-relations with session.
+Save caller-relations in .session.
 
 ```
     (add-hook 'kill-emacs-hook #'cg/prepare-persistent-data)
