@@ -5,7 +5,6 @@
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Package-Version: 20180509.1335
 ;; Version: 0.1.0
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
@@ -308,7 +307,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (seq-doseq (caller callers)
       (hierarchy-add-tree
        hierarchy caller
-       (λ (item) (when (eq item caller) (put caller 'caller-depth calculate-depth) func)))
+       (lambda (item) (when (eq item caller) (put caller 'caller-depth calculate-depth) func)))
       (message "Insert child %s under parent %s" (symbol-name caller) (symbol-name func)))
 
     ;; recursively populate callers.
@@ -322,7 +321,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (setq hierarchy-buffer
           (hierarchy-tree-display
            cg--default-hierarchy
-           (λ (tree-item _)
+           (lambda (tree-item _)
              (let ((depth (get tree-item 'caller-depth))
                    (caller (symbol-name tree-item))
                    (parent (or (hierarchy-parent cg--default-hierarchy tree-item) 'root-function)))
@@ -435,7 +434,7 @@ With prefix argument, discard cached data and re-generate reference data."
               (locations (cg--get-func-caller-location call-graph callee caller))
               (has-many (> (seq-length locations) 1)))
      (ivy-read "Caller Locations:" locations
-               :action (λ (func-location)
+               :action (lambda (func-location)
                          (while (not (equal func-location (car locations)))
                            (setq locations
                                  (nconc (cdr locations) (cons (car locations) ())))) ; put selected location upfront
@@ -559,7 +558,7 @@ With prefix argument, discard whole caller cache."
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
   (when cg-display-file
-    (add-hook 'widget-move-hook (λ () (cg/display-file-at-point))))
+    (add-hook 'widget-move-hook (lambda () (cg/display-file-at-point))))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
