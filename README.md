@@ -58,7 +58,7 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "g") 'cg/at-point)
     (define-key map (kbd "d") 'cg/remove-caller)
     (define-key map (kbd "l") 'cg/select-caller-location)
-    (define-key map (kbd "r") 'cg/reset-caller-filter)
+    (define-key map (kbd "r") 'cg/reset-caller-cache)
     (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
 ```
 
@@ -99,7 +99,7 @@ Save caller-relations in .session.
     (add-hook 'kill-emacs-hook #'cg/prepare-persistent-data)
 
     (setq desktop-globals-to-save
-        (append '((cg-persist-caller-filters . 1000)
+        (append '((cg-persist-caller-cache . 1000)
                   tags-file-name
                   tags-table-list)))
 ```
@@ -117,7 +117,7 @@ Lots more need to be improved.
 # Features
 
 - [x] Navigate to the caller file location.
-- [x] Support filter when searching for callers.
+- [x] Support cache when searching for callers.
 - [x] Incrementally generate sub caller.
 - [x] Support manually remove wrong callers.
 - [x] Support persistence of call-graph cache data.
