@@ -5,6 +5,7 @@
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
+;; Package-Version: 20180509.1335
 ;; Version: 0.1.0
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
@@ -82,11 +83,36 @@
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar cg-persist-caller-filters nil
-  "The alist form of `cg--caller-filters'.")
+(defvar cg-persist-caller-cache nil
+  "The alist form of `cg--caller-cache'.")
 
-(defvar cg--caller-filters nil
-  "The filters describing caller relations, used when building caller-map.")
+(defvar cg--caller-cache nil
+  "The cached caller-map.")
+
+(defvar cg--current-depth 0
+  "The current depth of call graph.")
+
+(defvar cg--default-instance nil
+  "Default CALL-GRAPH instance.")
+
+(defvar cg--default-hierarchy nil
+  "Hierarchy to display call-graph.")
+
+(defvar cg--window-configuration nil
+  "The window configuration to be restored upon closing the buffer.")
+
+(defvar cg--selected-window nil
+  "The currently selected window.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Data Structure
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar cg-persist-caller-cache nil
+  "The alist form of `cg--caller-cache'.")
+
+(defvar cg--caller-cache nil
+  "The cached caller-map.")
 
 (defvar cg--current-depth 0
   "The current depth of call graph.")
@@ -142,9 +168,9 @@
 
 (defun cg/prepare-persistent-data ()
   "Prepare data for persistence."
-  (when cg--caller-filters
-    (setq cg-persist-caller-filters
-          (map-into cg--caller-filters 'list))))
+  (when cg--caller-cache
+    (setq cg-persist-caller-cache
+          (map-into cg--caller-cache 'list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -275,14 +301,14 @@ CALCULATE-DEPTH is used to calculate actual depth."
              (hierarchy cg--default-hierarchy)
              (short-func (cg--extract-method-name func))
              (callers
-              (or (map-elt cg--caller-filters func (list))
+              (or (map-elt cg--caller-cache func (list)) ; load callers from cache
                   (map-elt (call-graph--callers call-graph) short-func (list)))))
 
     ;; populate hierarchy data.
     (seq-doseq (caller callers)
       (hierarchy-add-tree
        hierarchy caller
-       (lambda (item) (when (eq item caller) (put caller 'caller-depth calculate-depth) func)))
+       (λ (item) (when (eq item caller) (put caller 'caller-depth calculate-depth) func)))
       (message "Insert child %s under parent %s" (symbol-name caller) (symbol-name func)))
 
     ;; recursively populate callers.
@@ -296,7 +322,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (setq hierarchy-buffer
           (hierarchy-tree-display
            cg--default-hierarchy
-           (lambda (tree-item _)
+           (λ (tree-item _)
              (let ((depth (get tree-item 'caller-depth))
                    (caller (symbol-name tree-item))
                    (parent (or (hierarchy-parent cg--default-hierarchy tree-item) 'root-function)))
@@ -327,11 +353,11 @@ CALCULATE-DEPTH is used to calculate actual depth."
   (when (or current-prefix-arg (null cg--default-instance))
     (setq cg--default-instance (cg-new))) ; clear cached reference
 
-  (when (null cg--caller-filters)
-    (if cg-persist-caller-filters ; load filters from saved session
-        (setq cg--caller-filters (map-into cg-persist-caller-filters 'hash-table)
-              cg-persist-caller-filters nil)
-      (setq cg--caller-filters (make-hash-table :test #'equal)))))
+  (when (null cg--caller-cache)
+    (if cg-persist-caller-cache ; load cache from saved session
+        (setq cg--caller-cache (map-into cg-persist-caller-cache 'hash-table)
+              cg-persist-caller-cache nil)
+      (setq cg--caller-cache (make-hash-table :test #'equal)))))
 
 ;;;###autoload
 (defun call-graph (&optional func)
@@ -409,7 +435,7 @@ With prefix argument, discard cached data and re-generate reference data."
               (locations (cg--get-func-caller-location call-graph callee caller))
               (has-many (> (seq-length locations) 1)))
      (ivy-read "Caller Locations:" locations
-               :action (lambda (func-location)
+               :action (λ (func-location)
                          (while (not (equal func-location (car locations)))
                            (setq locations
                                  (nconc (cdr locations) (cons (car locations) ())))) ; put selected location upfront
@@ -428,26 +454,26 @@ With prefix argument, discard cached data and re-generate reference data."
              (callers (map-elt (call-graph--callers call-graph) short-func (list)))
              (deep-copy-of-callers (seq-map #'identity callers))
              (filters
-              (or (map-elt cg--caller-filters callee deep-copy-of-callers)
-                  (setf (map-elt cg--caller-filters callee) deep-copy-of-callers))))
+              (or (map-elt cg--caller-cache callee deep-copy-of-callers)
+                  (setf (map-elt cg--caller-cache callee) deep-copy-of-callers))))
     (tree-mode-delete-match (symbol-name caller))
-    (setf (map-elt cg--caller-filters callee)
+    (setf (map-elt cg--caller-cache callee)
           (remove caller filters))))
 
-(defun cg/reset-caller-filter ()
-  "Within buffer <*call-graph*>, reset caller filter for symbol at point.
-With prefix argument, discard whole caller filter."
+(defun cg/reset-caller-cache ()
+  "Within buffer <*call-graph*>, reset caller cache for symbol at point.
+With prefix argument, discard whole caller cache."
   (interactive)
   (if current-prefix-arg
-      (when (yes-or-no-p "Reset whole caller filter ?")
-        (setf cg--caller-filters nil)
-        (message "Reset whole caller filter done"))
+      (when (yes-or-no-p "Reset whole caller cache ?")
+        (setf cg--caller-cache nil)
+        (message "Reset whole caller cache done"))
     (save-mark-and-excursion
      (when (get-char-property (point) 'button)
        (forward-char 4))
      (when-let ((caller (get-text-property (point) 'caller-name)))
-       (setf (map-elt cg--caller-filters caller) nil)
-       (message (format "Reset caller filter for %s done" caller))))))
+       (setf (map-elt cg--caller-cache caller) nil)
+       (message (format "Reset caller cache for %s done" caller))))))
 
 (defun cg/quit ()
   "Quit `call-graph'."
@@ -514,7 +540,7 @@ With prefix argument, discard whole caller filter."
     (define-key map (kbd "g") 'cg/at-point)
     (define-key map (kbd "d") 'cg/remove-caller)
     (define-key map (kbd "l") 'cg/select-caller-location)
-    (define-key map (kbd "r") 'cg/reset-caller-filter)
+    (define-key map (kbd "r") 'cg/reset-caller-cache)
     (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
@@ -533,7 +559,7 @@ With prefix argument, discard whole caller filter."
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
   (when cg-display-file
-    (add-hook 'widget-move-hook (lambda () (cg/display-file-at-point))))
+    (add-hook 'widget-move-hook (λ () (cg/display-file-at-point))))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
