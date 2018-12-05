@@ -107,31 +107,6 @@
 ;; Data Structure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar cg-persist-caller-cache nil
-  "The alist form of `cg--caller-cache'.")
-
-(defvar cg--caller-cache nil
-  "The cached caller-map.")
-
-(defvar cg--current-depth 0
-  "The current depth of call graph.")
-
-(defvar cg--default-instance nil
-  "Default CALL-GRAPH instance.")
-
-(defvar cg--default-hierarchy nil
-  "Hierarchy to display call-graph.")
-
-(defvar cg--window-configuration nil
-  "The window configuration to be restored upon closing the buffer.")
-
-(defvar cg--selected-window nil
-  "The currently selected window.")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Data Structure
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (cl-defstruct (call-graph
                (:constructor nil)
                (:constructor call-graph--make)
