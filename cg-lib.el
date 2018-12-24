@@ -36,9 +36,9 @@
 (defvar pattern-replace-alist
   '(("\"[^\"]*\""   " quoted-string ") ;; get rid of quoted-string first
     ("([^()]*)"     " parens ")
-    ("<[^<>]*>"     " brackets ")
-    ("{[^{}]*}"     " curly-brace ")
-    ("\\[[^][]*\\]" " brackets-2 ")
+    ("<[^<>]*>"     " angle-bracket ")
+    ("{[^{}]*}"     " curly-bracket ")
+    ("\\[[^][]*\\]" " square-bracket ")
     ("void"         ""))
   "Replace PATTERN with REPLACE for better C++ function argument parsing.")
 
