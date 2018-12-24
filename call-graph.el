@@ -43,7 +43,7 @@
 
 ;;; Code:
 
-(require 'cl-lib)
+(require 'cg-lib)
 (require 'hierarchy)
 (require 'tree-mode)
 (require 'ivy)
