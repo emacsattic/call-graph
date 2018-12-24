@@ -99,7 +99,7 @@ If there's a string at point, use it instead of prompt."
                   ((not (string= "" args-string)) (length (split-string args-string ",")))))))
     (error nil)))
 
-(defun get-number-of-args(func-with-args)
+(defun get-number-of-args(&optional func-with-args)
   "Interactively get number of arguments of FUNC-WITH-ARGS."
   (interactive (list (smart/read-from-minibuffer "Input C++ function with args")))
   (deactivate-mark)
