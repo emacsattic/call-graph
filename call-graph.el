@@ -250,16 +250,16 @@ Otherwise, get the symbol at point."
   "In CALL-GRAPH, given FUNC, search callers deep to level DEPTH."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
              (short-func (cg--extract-method-name func)))
-    (let ((caller-pairs (list))
+    (let ((caller-list (list))
           (callers (map-elt (call-graph--callers call-graph) short-func (list))))
 
       ;; callers not found.
       (unless callers
         (seq-doseq (reference (cg--find-references short-func))
-          (when-let ((caller-pair (and reference (cg--find-caller reference))))
-            (message (format "Search returns: %s" (symbol-name (car caller-pair))))
-            (push caller-pair caller-pairs)))
-        (cg--add-callers call-graph func caller-pairs)
+          (when-let ((caller-info (and reference (cg--find-caller reference))))
+            (message (format "Search returns: %s" (symbol-name (car caller-info))))
+            (push caller-info caller-list)))
+        (cg--add-callers call-graph func caller-list)
         (setq callers (map-elt (call-graph--callers call-graph) short-func (list))))
 
       ;; recursively search callers.
