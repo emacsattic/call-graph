@@ -28,12 +28,14 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'cc-defs)
+(require 'cc-menus)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar pattern-replace-alist
+(defconst pattern-replace-alist
   '(("\"[^\"]*\""   " quoted-string ") ;; get rid of quoted-string first
     ("([^()]*)"     " parens ")
     ("<[^<>]*>"     " angle-bracket ")
@@ -41,6 +43,12 @@
     ("\\[[^][]*\\]" " square-bracket ")
     ("void"         ""))
   "Replace PATTERN with REPLACE for better C++ function argument parsing.")
+
+(defconst pattern-to-func-left-parens
+  (concat
+   "\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ;; match function name
+   "\\([ \t\n]\\|\\\\\n\\)*(") ;; match left-parens
+  "Regexp to match function til its left parens.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -68,6 +76,39 @@ If there's a string at point, use it instead of prompt."
         (read-from-minibuffer final-prompt nil nil nil nil suggested)
       suggested)))
 
+;;; enable imenu to display both function name and its arg-list
+(defun enable-imenu-func-args()
+  "For current buffer, enable imenu to extract both function name and its arg-list."
+  (make-local-variable 'cc-imenu-c-generic-expression)
+  (make-local-variable 'cc-imenu-c++-generic-expression)
+  (setf (nth 2 cc-imenu-c++-generic-expression)
+        ;; General function name regexp
+        `(nil
+          ,(concat
+            "^\\<"                                 ; line MUST start with word char
+            ;; \n added to prevent overflow in regexp matcher.
+            ;; https://lists.gnu.org/r/emacs-pretest-bug/2007-02/msg00021.html
+            "[^()\n]*"                             ; no parentheses before
+            "[^" c-alnum "_:<>~]"                  ; match any non-identifier char
+            "\\(?2:\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ; 2ND-GROUP MATCH FUNCTION AND ITS ARGS WHILE 1ST-GROUP MATCH FUNCTION NAME
+            "\\([ \t\n]\\|\\\\\n\\)*("            ; see above, BUT the arg list
+            "\\([ \t\n]\\|\\\\\n\\)*"             ; must not start
+            "\\([^ \t\n(*]"                       ; with an asterisk or parentheses
+            "[^()]*\\(([^()]*)[^()]*\\)*"         ; Maybe function pointer arguments
+            "\\)?)\\)"                            ; END OF 2ND-GROUP
+            "\\([ \t\n]\\|\\\\\n\\)*[^ \t\n;(]"
+            ) 2)                                  ; USE 2ND-GROUP AS IMENU ITEM
+        cc-imenu-c-generic-expression cc-imenu-c++-generic-expression))
+
+;;; borrowed from somewhere else
+(defun trim-string (string)
+  "Remove white spaces in beginning and ending of STRING.
+White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
+  (replace-regexp-in-string
+   "\\`[ \t\n]*" ""
+   (replace-regexp-in-string
+    "[ \t\n]*\\'" "" string)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Routines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,8 +119,12 @@ If there's a string at point, use it instead of prompt."
       (with-temp-buffer
         (insert func-with-args)
         (check-parens) ;; check parentheses balance
-        (delete-region (point-min) (with-no-warnings (goto-char (point-min)) (search-forward "(" nil t) (point)))
-        (delete-region (with-no-warnings (goto-char (point-max)) (search-backward ")" nil t) (point)) (point-max))
+        (goto-char (point-min))
+        (unless (re-search-forward pattern-to-func-left-parens nil t)
+          (error "Failed to find left-parens"))
+        (delete-region (point-min) (point))
+        (goto-char (point-max))
+        (delete-region (search-backward ")" nil t) (point-max))
         ;; (message (buffer-string))
         (save-match-data ;; save previous match-data and restore later
           ;; Map over the elements of pattern-replace-alist
@@ -96,20 +141,25 @@ If there's a string at point, use it instead of prompt."
           ;; all noise cleared, count number of args
           (let ((args-string (trim-string (buffer-string))))
             (cond ((string= "" args-string) 0)
-                  ((not (string= "" args-string)) (length (split-string args-string ",")))))))
+                  ((not (string= "" args-string))
+                   (length (split-string args-string ",")))))))
     (error nil)))
 
 (defun get-number-of-args(&optional func-with-args)
   "Interactively get number of arguments of FUNC-WITH-ARGS."
   (interactive (list (smart/read-from-minibuffer "Input C++ function with args")))
   (deactivate-mark)
-  (message "number of args is: %d" (number-of-args func-with-args)))
+  (let ((nb-args (number-of-args func-with-args)))
+    (if nb-args
+        (message "Number of args is: %d" nb-args)
+      (message "Failed to get argument."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (cl-assert (= (number-of-args "func(template<p1,p2>(a),[a,b](a,b){a,b,c;},(a,b))") 3))
+
 
 (provide 'cg-lib)
 ;;; cg-lib.el ends here
