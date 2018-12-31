@@ -155,8 +155,8 @@
 e.g: class::method(arg1, arg2) => method."
   (when-let ((full-func-str (symbol-name full-func))
              (temp-split (split-string full-func-str "::"))
-             (short-func-with-arg (car (last temp-split)))
-             (short-func (intern (car (split-string short-func-with-arg "(")))))
+             (short-func-with-args (car (last temp-split)))
+             (short-func (intern (car (split-string short-func-with-args "(")))))
     short-func))
 
 (defun cg--get-func-caller-location (call-graph func caller)
