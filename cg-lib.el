@@ -27,9 +27,18 @@
 
 ;;; Code:
 
+(require 'cc-mode)
 (require 'cl-lib)
-(require 'cc-defs)
-(require 'cc-menus)
+(require 'which-func)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Customizable
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defcustom cg-display-func-args nil
+  "Non-nil means display function together with its args in `call-graph'."
+  :type 'boolean
+  :group 'call-graph)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
@@ -77,28 +86,33 @@ If there's a string at point, use it instead of prompt."
       suggested)))
 
 ;;; enable imenu to display both function name and its arg-list
-(defun cg--enable-imenu-func-args()
-  "For current buffer, enable imenu to extract both function name and its arg-list."
-  (make-local-variable 'cc-imenu-c-generic-expression)
-  (make-local-variable 'cc-imenu-c++-generic-expression)
-  (setf (nth 2 cc-imenu-c++-generic-expression)
-        ;; General function name regexp
-        `(nil
-          ,(concat
-            "^\\<"                                 ; line MUST start with word char
-            ;; \n added to prevent overflow in regexp matcher.
-            ;; https://lists.gnu.org/r/emacs-pretest-bug/2007-02/msg00021.html
-            "[^()\n]*"                             ; no parentheses before
-            "[^" c-alnum "_:<>~]"                  ; match any non-identifier char
-            "\\(?2:\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ; 2ND-GROUP MATCH FUNCTION AND ITS ARGS WHILE 1ST-GROUP MATCH FUNCTION NAME
-            "\\([ \t\n]\\|\\\\\n\\)*("            ; see above, BUT the arg list
-            "\\([ \t\n]\\|\\\\\n\\)*"             ; must not start
-            "\\([^ \t\n(*]"                       ; with an asterisk or parentheses
-            "[^()]*\\(([^()]*)[^()]*\\)*"         ; Maybe function pointer arguments
-            "\\)?)\\)"                            ; END OF 2ND-GROUP
-            "\\([ \t\n]\\|\\\\\n\\)*[^ \t\n;(]"
-            ) 2)                                  ; USE 2ND-GROUP AS IMENU ITEM
-        cc-imenu-c-generic-expression cc-imenu-c++-generic-expression))
+(defun cg--imenu-show-func-args()
+  "For current buffer, show function name and its arg-list."
+  (setq-local c++-mode-hook nil)
+  (c++-mode)
+  (when cg-display-func-args
+    (make-local-variable 'cc-imenu-c-generic-expression)
+    (make-local-variable 'cc-imenu-c++-generic-expression)
+    (setf (nth 2 cc-imenu-c++-generic-expression)
+          ;; General function name regexp
+          `(nil
+            ,(concat
+              "^\\<"                                 ; line MUST start with word char
+              ;; \n added to prevent overflow in regexp matcher.
+              ;; https://lists.gnu.org/r/emacs-pretest-bug/2007-02/msg00021.html
+              "[^()\n]*"                             ; no parentheses before
+              "[^" c-alnum "_:<>~]"                  ; match any non-identifier char
+              "\\(?2:\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ; 2ND-GROUP MATCH FUNCTION AND ITS ARGS WHILE 1ST-GROUP MATCH FUNCTION NAME
+              "\\([ \t\n]\\|\\\\\n\\)*("            ; see above, BUT the arg list
+              "\\([ \t\n]\\|\\\\\n\\)*"             ; must not start
+              "\\([^ \t\n(*]"                       ; with an asterisk or parentheses
+              "[^()]*\\(([^()]*)[^()]*\\)*"         ; Maybe function pointer arguments
+              "\\)?)\\)"                            ; END OF 2ND-GROUP
+              "\\([ \t\n]\\|\\\\\n\\)*[^ \t\n;(]"
+              ) 2)                                  ; USE 2ND-GROUP AS IMENU ITEM
+          cc-imenu-c-generic-expression cc-imenu-c++-generic-expression))
+  (setq-local which-func-cleanup-function nil)
+  (which-function-mode t))
 
 ;;; borrowed from somewhere else
 (defun cg--trim-string (string)
