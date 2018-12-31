@@ -201,8 +201,8 @@ Otherwise, get the symbol at point."
     (find-file-read-only-other-window file-name)
     (with-no-warnings (goto-line line-nb))))
 
-(defun cg--find-caller (reference)
-  "Given a REFERENCE, return the caller as (caller . location)."
+(defun cg--find-caller (reference &optional func)
+  "Given a REFERENCE of FUNC, return the caller as (caller . location)."
   (when-let ((tmp-split (split-string reference ":"))
              (file-name (car tmp-split))
              (line-nb-str (cadr tmp-split))
@@ -210,18 +210,16 @@ Otherwise, get the symbol at point."
              (is-valid-file (file-exists-p file-name))
              (is-valid-nb (integerp line-nb)))
     (let ((location (concat file-name ":" line-nb-str))
-          (caller nil))
+          (caller nil)
+          (nb-of-args (and func (cg--number-of-args func))))
       (with-temp-buffer
         (insert-file-contents-literally file-name)
-        ;; TODO: leave only hooks on which 'which-function-mode depends
-        ;; (set (make-local-variable 'c++-mode-hook) nil)
-        (c++-mode)
         (goto-char (point-min))
         (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
           (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
-        (which-function-mode t)
         (goto-char (point-min))
         (forward-line (1- line-nb))
+        (cg--imenu-show-func-args)
         (setq caller (which-function)))
       (when caller
         (cons (intern caller) location)))))
@@ -256,7 +254,7 @@ Otherwise, get the symbol at point."
       ;; callers not found.
       (unless callers
         (seq-doseq (reference (cg--find-references short-func))
-          (when-let ((caller-info (and reference (cg--find-caller reference))))
+          (when-let ((caller-info (and reference (cg--find-caller reference func))))
             (message (format "Search returns: %s" (symbol-name (car caller-info))))
             (push caller-info caller-list)))
         (cg--add-callers call-graph func caller-list)
@@ -351,9 +349,9 @@ With prefix argument, discard cached data and re-generate reference data."
         (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location)))
 
       (save-mark-and-excursion
-       (cg--create call-graph func cg-initial-max-depth)
-       (setq cg--window-configuration window-configuration
-             cg--selected-window selected-window)))))
+        (cg--create call-graph func cg-initial-max-depth)
+        (setq cg--window-configuration window-configuration
+              cg--selected-window selected-window)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Call-Graph Operations
