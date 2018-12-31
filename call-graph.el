@@ -152,11 +152,11 @@
 
 (defun cg--extract-method-name (full-func)
   "Given FULL-FUNC, return a SHORT-FUNC.
-e.g: class::method => method."
+e.g: class::method(arg1, arg2) => method."
   (when-let ((full-func-str (symbol-name full-func))
              (temp-split (split-string full-func-str "::"))
-             (short-func
-              (intern (seq-elt temp-split (1- (seq-length temp-split))))))
+             (short-func-with-arg (car (last temp-split)))
+             (short-func (intern (car (split-string short-func-with-arg "(")))))
     short-func))
 
 (defun cg--get-func-caller-location (call-graph func caller)
@@ -540,7 +540,7 @@ With prefix argument, discard whole caller cache."
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (global-set-key (kbd "C-c g") 'call-graph)
+;;; @see cg-test.el
 
 
 (provide 'call-graph)
