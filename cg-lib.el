@@ -35,7 +35,7 @@
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst pattern-replace-alist
+(defconst cg--pattern-replace-alist
   '(("\"[^\"]*\""   " quoted-string ") ;; get rid of quoted-string first
     ("([^()]*)"     " parens ")
     ("<[^<>]*>"     " angle-bracket ")
@@ -44,7 +44,7 @@
     ("void"         ""))
   "Replace PATTERN with REPLACE for better C++ function argument parsing.")
 
-(defconst pattern-to-func-left-parens
+(defconst cg--pattern-to-func-left-parens
   (concat
    "\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ;; match function name
    "\\([ \t\n]\\|\\\\\n\\)*(") ;; match left-parens
@@ -55,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; steal from ag/dwim-at-point
-(defun smart/dwim-at-point ()
+(defun cg--dwim-at-point ()
   "If there's an active selection, return that.
 Otherwise, get the symbol at point, as a string."
   (cond ((use-region-p)
@@ -65,10 +65,10 @@ Otherwise, get the symbol at point, as a string."
           (symbol-name (symbol-at-point))))))
 
 ;;; improved version, based on ag/read-from-minibuffer
-(defun smart/read-from-minibuffer (prompt)
+(defun cg--read-from-minibuffer (prompt)
   "Read a value from the minibuffer with PROMPT.
 If there's a string at point, use it instead of prompt."
-  (let* ((suggested (smart/dwim-at-point))
+  (let* ((suggested (cg--dwim-at-point))
          (final-prompt
           (if suggested (format "%s (default %s): " prompt suggested)
             (format "%s: " prompt))))
@@ -77,7 +77,7 @@ If there's a string at point, use it instead of prompt."
       suggested)))
 
 ;;; enable imenu to display both function name and its arg-list
-(defun enable-imenu-func-args()
+(defun cg--enable-imenu-func-args()
   "For current buffer, enable imenu to extract both function name and its arg-list."
   (make-local-variable 'cc-imenu-c-generic-expression)
   (make-local-variable 'cc-imenu-c++-generic-expression)
@@ -101,7 +101,7 @@ If there's a string at point, use it instead of prompt."
         cc-imenu-c-generic-expression cc-imenu-c++-generic-expression))
 
 ;;; borrowed from somewhere else
-(defun trim-string (string)
+(defun cg--trim-string (string)
   "Remove white spaces in beginning and ending of STRING.
 White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
   (replace-regexp-in-string
@@ -109,27 +109,35 @@ White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
    (replace-regexp-in-string
     "[ \t\n]*\\'" "" string)))
 
+(defun cg--string-to-symbol (string)
+  "Convert STRING to symbol."
+  (intern string))
+
+(defun cg--symbol-to-string (symbol)
+  "Convert SYMBOL to string."
+  (symbol-name symbol))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Routines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun number-of-args(func-with-args)
+(defun cg--number-of-args(func-with-args)
   "Count number of C++ function arguments of FUNC-WITH-ARGS."
   (condition-case nil
       (with-temp-buffer
         (insert func-with-args)
         (check-parens) ;; check parentheses balance
         (goto-char (point-min))
-        (unless (re-search-forward pattern-to-func-left-parens nil t)
+        (unless (re-search-forward cg--pattern-to-func-left-parens nil t)
           (error "Failed to find left-parens"))
         (delete-region (point-min) (point))
         (goto-char (point-max))
         (delete-region (search-backward ")" nil t) (point-max))
         ;; (message (buffer-string))
         (save-match-data ;; save previous match-data and restore later
-          ;; Map over the elements of pattern-replace-alist
+          ;; Map over the elements of cg--pattern-replace-alist
           ;; (pattern, replace)
-          (dolist (pair pattern-replace-alist)
+          (dolist (pair cg--pattern-replace-alist)
             (let ((pattern (car pair))
                   (replace (cadr pair)))
               (goto-char (point-min))
@@ -139,17 +147,17 @@ White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
                   (replace-match replace t nil))
                 (goto-char (point-min))))) ;; go over and do match-replace again
           ;; all noise cleared, count number of args
-          (let ((args-string (trim-string (buffer-string))))
+          (let ((args-string (cg--trim-string (buffer-string))))
             (cond ((string= "" args-string) 0)
                   ((not (string= "" args-string))
                    (length (split-string args-string ",")))))))
     (error nil)))
 
-(defun get-number-of-args(&optional func-with-args)
+(defun cg-get-number-of-args(&optional func-with-args)
   "Interactively get number of arguments of FUNC-WITH-ARGS."
-  (interactive (list (smart/read-from-minibuffer "Input C++ function with args")))
+  (interactive (list (cg--read-from-minibuffer "Input C++ function with args")))
   (deactivate-mark)
-  (let ((nb-args (number-of-args func-with-args)))
+  (let ((nb-args (cg--number-of-args func-with-args)))
     (if nb-args
         (message "Number of args is: %d" nb-args)
       (message "Failed to get argument."))))
@@ -158,7 +166,7 @@ White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(cl-assert (= (number-of-args "func(template<p1,p2>(a),[a,b](a,b){a,b,c;},(a,b))") 3))
+;;; @see cg-test.el
 
 
 (provide 'cg-lib)
