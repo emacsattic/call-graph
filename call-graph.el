@@ -374,9 +374,9 @@ With prefix argument, discard cached data and re-generate reference data."
   "Go to the occurrence on the current line."
   (interactive)
   (save-mark-and-excursion
-   (when (get-char-property (point) 'button)
-     (forward-char 4))
-   (cg/visit-file-at-point)))
+    (when (get-char-property (point) 'button)
+      (forward-char 4))
+    (cg/visit-file-at-point)))
 
 (defun cg/display-file-at-point ()
   "Display in another window the occurrence the current line describes."
@@ -388,31 +388,31 @@ With prefix argument, discard cached data and re-generate reference data."
   "Within buffer <*call-graph*>, generate new `call-graph' for symbol at point."
   (interactive)
   (save-mark-and-excursion
-   (when (get-char-property (point) 'button)
-     (forward-char 4))
-   (when-let ((caller (get-text-property (point) 'caller-name)))
-     (call-graph caller))))
+    (when (get-char-property (point) 'button)
+      (forward-char 4))
+    (when-let ((caller (get-text-property (point) 'caller-name)))
+      (call-graph caller))))
 
 (defun cg/select-caller-location ()
   "Select caller location as default location for function at point."
   (interactive)
   (save-mark-and-excursion
-   (when (get-char-property (point) 'button)
-     (forward-char 4))
-   (when-let ((call-graph cg--default-instance)
-              (callee (get-text-property (point) 'callee-name))
-              (caller (get-text-property (point) 'caller-name))
-              (func-caller-key
-               (intern (concat (symbol-name (cg--extract-method-name callee)) " <- " (symbol-name caller))))
-              (locations (cg--get-func-caller-location call-graph callee caller))
-              (has-many (> (seq-length locations) 1)))
-     (ivy-read "Caller Locations:" locations
-               :action (lambda (func-location)
-                         (while (not (equal func-location (car locations)))
-                           (setq locations
-                                 (nconc (cdr locations) (cons (car locations) ())))) ; put selected location upfront
-                         (setf (map-elt (call-graph--locations call-graph) func-caller-key) locations)
-                         (cg--visit-function func-location))))))
+    (when (get-char-property (point) 'button)
+      (forward-char 4))
+    (when-let ((call-graph cg--default-instance)
+               (callee (get-text-property (point) 'callee-name))
+               (caller (get-text-property (point) 'caller-name))
+               (func-caller-key
+                (intern (concat (symbol-name (cg--extract-method-name callee)) " <- " (symbol-name caller))))
+               (locations (cg--get-func-caller-location call-graph callee caller))
+               (has-many (> (seq-length locations) 1)))
+      (ivy-read "Caller Locations:" locations
+                :action (lambda (func-location)
+                          (while (not (equal func-location (car locations)))
+                            (setq locations
+                                  (nconc (cdr locations) (cons (car locations) ())))) ; put selected location upfront
+                          (setf (map-elt (call-graph--locations call-graph) func-caller-key) locations)
+                          (cg--visit-function func-location))))))
 
 (defun cg/remove-caller ()
   "Within buffer <*call-graph*>, remove caller at point."
@@ -441,11 +441,11 @@ With prefix argument, discard whole caller cache."
         (setf cg--caller-cache nil)
         (message "Reset whole caller cache done"))
     (save-mark-and-excursion
-     (when (get-char-property (point) 'button)
-       (forward-char 4))
-     (when-let ((caller (get-text-property (point) 'caller-name)))
-       (setf (map-elt cg--caller-cache caller) nil)
-       (message (format "Reset caller cache for %s done" caller))))))
+      (when (get-char-property (point) 'button)
+        (forward-char 4))
+      (when-let ((caller (get-text-property (point) 'caller-name)))
+        (setf (map-elt cg--caller-cache caller) nil)
+        (message (format "Reset caller cache for %s done" caller))))))
 
 (defun cg/quit ()
   "Quit `call-graph'."
