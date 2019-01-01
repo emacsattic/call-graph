@@ -85,6 +85,19 @@ If there's a string at point, use it instead of prompt."
         (read-from-minibuffer final-prompt nil nil nil nil suggested)
       suggested)))
 
+;;; borrowed from somewhere else
+(defun cg--trim-string (string)
+  "Remove white spaces in beginning and ending of STRING.
+White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
+  (replace-regexp-in-string
+   "\\`[ \t\n]*" ""
+   (replace-regexp-in-string
+    "[ \t\n]*\\'" "" string)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Routines
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;; enable imenu to display both function name and its arg-list
 (defun cg--imenu-show-func-args()
   "For current buffer, show function name and its arg-list."
@@ -113,27 +126,6 @@ If there's a string at point, use it instead of prompt."
           cc-imenu-c-generic-expression cc-imenu-c++-generic-expression))
   (setq-local which-func-cleanup-function nil)
   (which-function-mode t))
-
-;;; borrowed from somewhere else
-(defun cg--trim-string (string)
-  "Remove white spaces in beginning and ending of STRING.
-White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
-  (replace-regexp-in-string
-   "\\`[ \t\n]*" ""
-   (replace-regexp-in-string
-    "[ \t\n]*\\'" "" string)))
-
-(defun cg--string-to-symbol (string)
-  "Convert STRING to symbol."
-  (intern string))
-
-(defun cg--symbol-to-string (symbol)
-  "Convert SYMBOL to string."
-  (symbol-name symbol))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Routines
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun cg--number-of-args(func-with-args)
   "Count number of C++ function arguments of FUNC-WITH-ARGS."
@@ -166,6 +158,22 @@ White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
                   ((not (string= "" args-string))
                    (length (split-string args-string ",")))))))
     (error nil)))
+
+(defun cg--scan-func-args (func)
+  "Scan FUNC and its args from current position, and return number of args."
+  (save-mark-and-excursion
+    (save-match-data
+      (condition-case nil
+          (let (func-beginning
+                func-with-args-str)
+            (search-forward func)
+            (setq func-beginning (match-beginning 0))
+            (forward-sexp)
+            (setq func-with-args-str
+                  (buffer-substring-no-properties func-beginning (point)))
+            (when func-with-args-str
+              (cg--number-of-args func-with-args-str)))
+        (error nil)))))
 
 (defun cg-get-number-of-args(&optional func-with-args)
   "Interactively get number of arguments of FUNC-WITH-ARGS."
