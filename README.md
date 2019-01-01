@@ -122,7 +122,7 @@ Lots more need to be improved.
 - [x] Incrementally generate sub caller.
 - [x] Support manually remove wrong callers.
 - [x] Support persistence of call-graph cache data.
-- [ ] Add async support for call-graph generation.
+- [x] Show function together with its args in call-graph.
 
 # Contributing
 Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
