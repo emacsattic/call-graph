@@ -201,17 +201,20 @@ Otherwise, get the symbol at point."
     (find-file-read-only-other-window file-name)
     (with-no-warnings (goto-line line-nb))))
 
-(defun cg--find-caller (reference &optional func)
+(defun cg--find-caller (reference func)
   "Given a REFERENCE of FUNC, return the caller as (caller . location)."
   (when-let ((tmp-split (split-string reference ":"))
              (file-name (car tmp-split))
              (line-nb-str (cadr tmp-split))
              (line-nb (string-to-number line-nb-str))
              (is-valid-file (file-exists-p file-name))
-             (is-valid-nb (integerp line-nb)))
+             (is-valid-nb (integerp line-nb))
+             func
+             (short-func (cg--extract-method-name func)))
     (let ((location (concat file-name ":" line-nb-str))
           (caller nil)
-          (nb-of-args (and func (cg--number-of-args func))))
+          (nb-of-func-args (cg--number-of-args (symbol-name func)))
+          (nb-of-reference-args nil))
       (with-temp-buffer
         (insert-file-contents-literally file-name)
         (goto-char (point-min))
@@ -220,7 +223,13 @@ Otherwise, get the symbol at point."
         (goto-char (point-min))
         (forward-line (1- line-nb))
         (cg--imenu-show-func-args)
-        (setq caller (which-function)))
+        (setq nb-of-reference-args (cg--scan-func-args (symbol-name short-func)))
+        (if (and nb-of-func-args nb-of-reference-args)
+            ;; TODO: check if func has args with default value
+            ;; if not, we should use exact match here instead of <=.
+            (when (<= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
+              (setq caller (which-function)))
+          (setq caller (which-function))))
       (when caller
         (cons (intern caller) location)))))
 
