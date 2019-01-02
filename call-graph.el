@@ -145,6 +145,14 @@
 ;; Persitence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun cg--extract-namespace-and-method (full-func)
+  "Given FULL-FUNC, return a namespace and method.
+e.g: class::method(arg1, arg2) => class::method."
+  (when-let ((full-func-str full-func)
+             (temp-split (split-string full-func-str "("))
+             (short-func-with-namespace (car temp-split)))
+    short-func-with-namespace))
+
 (defun cg/prepare-persistent-data ()
   "Prepare data for persistence."
   (when cg--caller-cache
@@ -223,7 +231,7 @@ Otherwise, get the symbol at point."
       (with-temp-buffer
         (unwind-protect
             (progn
-              (when cg-display-func-args (cg--customize-c++-generic-expression t))
+              (cg--customize-c++-generic-expression t)
               (insert-file-contents-literally file-name)
               (goto-char (point-min))
               (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
@@ -241,7 +249,9 @@ Otherwise, get the symbol at point."
                   ;; if not, we should use exact match here.
                   (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
                     (setq caller (which-function)))
-                (setq caller (which-function))))
+                (setq caller (which-function)))
+              (unless cg-display-func-args
+                (setq caller (cg--extract-namespace-and-method caller))))
           (cg--customize-c++-generic-expression nil)))
       (when caller
         (cons (intern caller) location)))))
