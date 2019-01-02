@@ -78,6 +78,11 @@
   :risky t
   :group 'call-graph)
 
+(defcustom cg-display-func-args nil
+  "Non-nil means display function together with its args in `call-graph'."
+  :type 'boolean
+  :group 'call-graph)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -216,20 +221,28 @@ Otherwise, get the symbol at point."
           (nb-of-func-args (cg--number-of-args (symbol-name func)))
           (nb-of-reference-args nil))
       (with-temp-buffer
-        (insert-file-contents-literally file-name)
-        (goto-char (point-min))
-        (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
-          (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
-        (goto-char (point-min))
-        (forward-line (1- line-nb))
-        (cg--imenu-show-func-args)
-        (setq nb-of-reference-args (cg--scan-func-args (symbol-name short-func)))
-        (if (and nb-of-func-args nb-of-reference-args)
-            ;; TODO: check if func has args with default value
-            ;; if not, we should use exact match here.
-            (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
-              (setq caller (which-function)))
-          (setq caller (which-function))))
+        (unwind-protect
+            (progn
+              (when cg-display-func-args (cg--customize-c++-generic-expression t))
+              (insert-file-contents-literally file-name)
+              (goto-char (point-min))
+              (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
+                (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
+              (goto-char (point-min))
+              (forward-line (1- line-nb))
+              (setq c++-mode-hook nil)
+              (setq imenu--index-alist nil)
+              (c++-mode)
+              (setq-local which-func-cleanup-function nil)
+              (which-function-mode t)
+              (setq nb-of-reference-args (cg--scan-func-args (symbol-name short-func)))
+              (if (and nb-of-func-args nb-of-reference-args)
+                  ;; TODO: check if func has args with default value
+                  ;; if not, we should use exact match here.
+                  (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
+                    (setq caller (which-function)))
+                (setq caller (which-function))))
+          (cg--customize-c++-generic-expression nil)))
       (when caller
         (cons (intern caller) location)))))
 
