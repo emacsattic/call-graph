@@ -154,9 +154,9 @@
   "Given FULL-FUNC, return a SHORT-FUNC.
 e.g: class::method(arg1, arg2) => method."
   (when-let ((full-func-str (symbol-name full-func))
-             (temp-split (split-string full-func-str "::"))
-             (short-func-with-args (car (last temp-split)))
-             (short-func (intern (car (split-string short-func-with-args "(")))))
+             (temp-split (split-string full-func-str "("))
+             (short-func-with-namespace (car temp-split))
+             (short-func (intern (car (last (split-string short-func-with-namespace "::"))))))
     short-func))
 
 (defun cg--get-func-caller-location (call-graph func caller)
@@ -226,8 +226,8 @@ Otherwise, get the symbol at point."
         (setq nb-of-reference-args (cg--scan-func-args (symbol-name short-func)))
         (if (and nb-of-func-args nb-of-reference-args)
             ;; TODO: check if func has args with default value
-            ;; if not, we should use exact match here instead of <=.
-            (when (<= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
+            ;; if not, we should use exact match here.
+            (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
               (setq caller (which-function)))
           (setq caller (which-function))))
       (when caller
