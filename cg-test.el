@@ -40,6 +40,7 @@
 (cl-assert (eq (intern "method") (cg--extract-method-name (intern "method"))))
 (cl-assert (eq (intern "method") (cg--extract-method-name (intern "class::method"))))
 (cl-assert (eq (intern "method") (cg--extract-method-name (intern "class::method(arg1,arg2)"))))
+(cl-assert (eq (intern "method") (cg--extract-method-name (intern "class::method(class::variable1,class::variable2)"))))
 
 
 (provide 'cg-test)
