@@ -97,7 +97,7 @@ White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
 
 (defun cg--customize-c++-generic-expression (toggle)
   "When TOGGLE is non-nil, customiz c++-generic-expression to support function args.
-else, retore original c++-generic-expression."
+else, restore original c++-generic-expression."
   (if toggle
       (with-eval-after-load 'cc-menus
         ;; enable imenu to display both function name and its arg-list
