@@ -145,14 +145,6 @@
 ;; Persitence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg--extract-namespace-and-method (full-func)
-  "Given FULL-FUNC, return a namespace and method.
-e.g: class::method(arg1, arg2) => class::method."
-  (when-let ((full-func-str full-func)
-             (temp-split (split-string full-func-str "("))
-             (short-func-with-namespace (car temp-split)))
-    short-func-with-namespace))
-
 (defun cg/prepare-persistent-data ()
   "Prepare data for persistence."
   (when cg--caller-cache
@@ -162,6 +154,14 @@ e.g: class::method(arg1, arg2) => class::method."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun cg--extract-namespace-and-method (full-func)
+  "Given FULL-FUNC, return a namespace and method.
+e.g: class::method(arg1, arg2) => class::method."
+  (when-let ((full-func-str full-func)
+             (temp-split (split-string full-func-str "("))
+             (short-func-with-namespace (car temp-split)))
+    short-func-with-namespace))
 
 (defun cg--extract-method-name (full-func)
   "Given FULL-FUNC, return a SHORT-FUNC.
@@ -238,7 +238,7 @@ Otherwise, get the symbol at point."
                 (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
               (goto-char (point-min))
               (forward-line (1- line-nb))
-              (setq c++-mode-hook nil)
+              (setq-local c++-mode-hook nil)
               (setq imenu--index-alist nil)
               (c++-mode)
               (setq-local which-func-cleanup-function nil)
