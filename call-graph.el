@@ -354,10 +354,10 @@ CALCULATE-DEPTH is used to calculate actual depth."
 
 (defun cg--initialize ()
   "Initialize data for `call-graph'."
-  (when (or current-prefix-arg (null cg--default-instance))
+  (when (or current-prefix-arg (not cg--default-instance))
     (setq cg--default-instance (cg-new))) ; clear cached reference
 
-  (when (null cg--caller-cache)
+  (when (not cg--caller-cache)
     (if cg-persist-caller-cache ; load cache from saved session
         (setq cg--caller-cache (map-into cg-persist-caller-cache 'hash-table)
               cg-persist-caller-cache nil)
