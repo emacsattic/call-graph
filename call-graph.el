@@ -490,6 +490,14 @@ With prefix argument, discard whole caller cache."
       (set-window-configuration configuration)
       (select-window selected-window))))
 
+(defun cg/toggle-func-args ()
+  "Toggle show func-args for current `call-graph'."
+  (interactive)
+  (setq cg-display-func-args (not cg-display-func-args)
+        cg--default-instance nil)
+  (goto-char (point-min))
+  (cg/at-point))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -545,6 +553,7 @@ With prefix argument, discard whole caller cache."
     (define-key map (kbd "d") 'cg/remove-caller)
     (define-key map (kbd "l") 'cg/select-caller-location)
     (define-key map (kbd "r") 'cg/reset-caller-cache)
+    (define-key map (kbd "t") 'cg/toggle-func-args)
     (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
