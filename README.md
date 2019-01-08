@@ -124,7 +124,7 @@ Lots more need to be improved.
 - [x] Incrementally generate sub caller.
 - [x] Support manually remove wrong callers.
 - [x] Support persistence of call-graph cache data.
-- [x] Show function together with its args in call-graph.
+- [x] Toggle show function args in call-graph.
 
 # Contributing
 Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
