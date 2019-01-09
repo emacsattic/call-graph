@@ -359,7 +359,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
 (defun call-graph (&optional func)
   "Generate `call-graph' for FUNC / func-at-point / func-in-active-rigion.
 With prefix argument, discard cached data and re-generate reference data."
-  (interactive (list (intern (cg--dwim-at-point))))
+  (interactive (list (and (cg--dwim-at-point) (intern (cg--dwim-at-point)))))
   (deactivate-mark)
   (when func
     (cg--initialize)
