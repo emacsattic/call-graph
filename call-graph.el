@@ -195,14 +195,6 @@ e.g: class::method(arg1, arg2) => method."
       (error "Failed to find \"GNU GLOBAL\" in path: %s" absolute-path))
     absolute-path))
 
-(defun cg--dwim-at-point ()
-  "If there's an active selection, return that.
-Otherwise, get the symbol at point."
-  (if (use-region-p)
-      (prog1 (intern (buffer-substring-no-properties (region-beginning) (region-end)))
-        (deactivate-mark))
-    (symbol-at-point)))
-
 (defun cg--visit-function (func-location)
   "Visit function location FUNC-LOCATION."
   (when-let ((temp-split (split-string func-location ":"))
@@ -367,7 +359,8 @@ CALCULATE-DEPTH is used to calculate actual depth."
 (defun call-graph (&optional func)
   "Generate `call-graph' for FUNC / func-at-point / func-in-active-rigion.
 With prefix argument, discard cached data and re-generate reference data."
-  (interactive (list (cg--dwim-at-point)))
+  (interactive (list (intern (cg--dwim-at-point))))
+  (deactivate-mark)
   (when func
     (cg--initialize)
     (let ((call-graph cg--default-instance)
