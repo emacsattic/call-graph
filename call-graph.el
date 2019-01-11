@@ -219,7 +219,9 @@ e.g: class::method(arg1, arg2) => method."
     (let ((location (concat file-name ":" line-nb-str))
           (caller nil)
           (nb-of-func-args (cg--number-of-args (symbol-name func)))
-          (nb-of-reference-args nil))
+          (nb-of-reference-args nil)
+          (short-fun-str (symbol-name short-func))
+          (is-valid-reference t))
       (with-temp-buffer
         (unwind-protect
             (progn
@@ -235,15 +237,25 @@ e.g: class::method(arg1, arg2) => method."
               (c++-mode)
               (setq-local which-func-cleanup-function nil)
               (which-function-mode t)
-              (setq nb-of-reference-args (cg--scan-func-args (symbol-name short-func)))
-              (if (and nb-of-func-args nb-of-reference-args)
-                  ;; TODO: check if func has args with default value
-                  ;; if not, we should use exact match here.
-                  (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
-                    (setq caller (which-function)))
-                (setq caller (which-function)))
-              (unless cg-display-func-args
-                (setq caller (cg--extract-namespace-and-method caller))))
+              ;; make sure reference contains a function call
+              (save-mark-and-excursion
+                (end-of-line)
+                (let ((end-of-line-pos (point)))
+                  (beginning-of-line)
+                  (if (not (re-search-forward (concat short-fun-str "\\([ \t\n]\\|\\\\\n\\)*(") nil t))
+                      (setq is-valid-reference nil)
+                    (when (> (match-beginning 0) end-of-line-pos)
+                      (setq is-valid-reference nil)))))
+              (when is-valid-reference
+                (setq nb-of-reference-args (cg--scan-func-args short-fun-str))
+                (if (and nb-of-func-args nb-of-reference-args)
+                    ;; TODO: check if func has args with default value
+                    ;; if not, we should use exact match here.
+                    (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
+                      (setq caller (which-function)))
+                  (setq caller (which-function)))
+                (unless cg-display-func-args
+                  (setq caller (cg--extract-namespace-and-method caller)))))
           (cg--customize-c++-generic-expression nil)))
       (when caller
         (cons (intern caller) location)))))
