@@ -84,7 +84,8 @@
   :group 'call-graph)
 
 (defcustom cg-filter-func-reference nil
-  "Non-nil means only reference with valid function call will be displayed in `call-graph'."
+  "Non-nil means only reference containing valid function call can be used in `call-graph'.
+e.g: reference with only function name as call-back param will be ignored when this is set."
   :type 'boolean
   :group 'call-graph)
 
