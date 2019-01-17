@@ -62,6 +62,7 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "l") 'cg/select-caller-location)
     (define-key map (kbd "r") 'cg/reset-caller-cache)
     (define-key map (kbd "t") 'cg/toggle-func-args)
+    (define-key map (kbd "f") 'cg/toggle-filter-func-reference)
     (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
 ```
 
