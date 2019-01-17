@@ -83,6 +83,11 @@
   :type 'boolean
   :group 'call-graph)
 
+(defcustom cg-filter-func-reference nil
+  "Non-nil means only reference with valid function call will be displayed in `call-graph'."
+  :type 'boolean
+  :group 'call-graph)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -238,14 +243,15 @@ e.g: class::method(arg1, arg2) => method."
               (setq-local which-func-cleanup-function nil)
               (which-function-mode t)
               ;; make sure reference contains a function call
-              (save-mark-and-excursion
-                (end-of-line)
-                (let ((end-of-line-pos (point)))
-                  (beginning-of-line)
-                  (if (not (re-search-forward (concat short-fun-str "\\([ \t\n]\\|\\\\\n\\)*(") nil t))
-                      (setq is-valid-reference nil)
-                    (when (> (match-beginning 0) end-of-line-pos)
-                      (setq is-valid-reference nil)))))
+              (when cg-filter-func-reference
+                (save-mark-and-excursion
+                  (end-of-line)
+                  (let ((end-of-line-pos (point)))
+                    (beginning-of-line)
+                    (if (not (re-search-forward (concat short-fun-str "\\([ \t\n]\\|\\\\\n\\)*(") nil t))
+                        (setq is-valid-reference nil)
+                      (when (> (match-beginning 0) end-of-line-pos)
+                        (setq is-valid-reference nil))))))
               (when is-valid-reference
                 (setq nb-of-reference-args (cg--scan-func-args short-fun-str))
                 (if (and nb-of-func-args nb-of-reference-args)
@@ -503,6 +509,14 @@ With prefix argument, discard whole caller cache."
   (goto-char (point-min))
   (cg/at-point))
 
+(defun cg/toggle-filter-func-reference ()
+  "Toggle filter-func-reference for current `call-graph'."
+  (interactive)
+  (setq cg-filter-func-reference (not cg-filter-func-reference)
+        cg--default-instance nil)
+  (goto-char (point-min))
+  (cg/at-point))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -559,6 +573,7 @@ With prefix argument, discard whole caller cache."
     (define-key map (kbd "l") 'cg/select-caller-location)
     (define-key map (kbd "r") 'cg/reset-caller-cache)
     (define-key map (kbd "t") 'cg/toggle-func-args)
+    (define-key map (kbd "f") 'cg/toggle-filter-func-reference)
     (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
