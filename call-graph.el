@@ -83,9 +83,8 @@
   :type 'boolean
   :group 'call-graph)
 
-(defcustom cg-filter-func-reference nil
-  "Non-nil means only reference with valid function call will be used in `call-graph'.
-e.g: when set, reference with only function name but no `(...)' will be ignored."
+(defcustom cg-ignore-invalid-reference nil
+  "Non-nil means reference with function name but no `(...)' will be ignored."
   :type 'boolean
   :group 'call-graph)
 
@@ -241,7 +240,7 @@ e.g: class::method(arg1, arg2) => method."
               (setq-local which-func-cleanup-function nil)
               (which-function-mode t)
               ;; make sure reference contains a function call
-              (when cg-filter-func-reference
+              (when cg-ignore-invalid-reference
                 (save-mark-and-excursion
                   (end-of-line)
                   (let ((end-of-line-pos (point)))
@@ -531,7 +530,7 @@ With prefix argument, discard whole caller cache."
       (set-window-configuration configuration)
       (select-window selected-window))))
 
-(defun cg/toggle-func-args ()
+(defun cg/toggle-show-func-args ()
   "Toggle show func-args for current `call-graph'."
   (interactive)
   (setq cg-display-func-args (not cg-display-func-args)
@@ -539,10 +538,10 @@ With prefix argument, discard whole caller cache."
   (goto-char (point-min))
   (cg/at-point))
 
-(defun cg/toggle-filter-func-reference ()
-  "Toggle filter-func-reference for current `call-graph'."
+(defun cg/toggle-invalid-reference ()
+  "Toggle ignore-invalid-reference for current `call-graph'."
   (interactive)
-  (setq cg-filter-func-reference (not cg-filter-func-reference)
+  (setq cg-ignore-invalid-reference (not cg-ignore-invalid-reference)
         cg--default-instance nil)
   (goto-char (point-min))
   (cg/at-point))
@@ -599,8 +598,8 @@ With prefix argument, discard whole caller cache."
     (define-key map (kbd "d") 'cg/remove-caller)
     (define-key map (kbd "l") 'cg/select-caller-location)
     (define-key map (kbd "r") 'cg/reset-caller-cache)
-    (define-key map (kbd "t") 'cg/toggle-func-args)
-    (define-key map (kbd "f") 'cg/toggle-filter-func-reference)
+    (define-key map (kbd "t") 'cg/toggle-show-func-args)
+    (define-key map (kbd "f") 'cg/toggle-invalid-reference)
     (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
