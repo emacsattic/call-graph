@@ -99,9 +99,6 @@ e.g: when set, reference with only function name but no `(...)' will be ignored.
 (defvar cg--caller-cache nil
   "The cached caller-map.")
 
-(defvar cg--current-depth 0
-  "The current depth of call graph.")
-
 (defvar cg--default-instance nil
   "Default CALL-GRAPH instance.")
 
@@ -283,6 +280,42 @@ e.g: class::method(arg1, arg2) => method."
     (when (setq command-out-put (shell-command-to-string command))
       (split-string command-out-put "\n" t))))
 
+(defun cg--widget-root ()
+  "Return current tree depth."
+  (save-mark-and-excursion
+    (goto-char (point-min))
+    (let ((me (tree-mode-icon-current-line))
+          (depth 0))
+      (when (and (not (tree-widget-leaf-node-icon-p me))
+                 (tree-widget-p (widget-get me :parent)))
+        (setq me (widget-get me :parent))
+        (intern (widget-get (tree-widget-node me) :tag))))))
+
+(defun cg--widget-depth ()
+  "Return current tree depth."
+  (save-mark-and-excursion
+    (goto-char (point-min))
+    (let ((me (tree-mode-icon-current-line))
+          (depth 0))
+      (if (or (tree-widget-leaf-node-icon-p me)
+              (not (tree-widget-p (widget-get me :parent))))
+          (message "Not a tree under point!")
+        (prog1 (setq me (widget-get me :parent)
+                     depth (cg--widget-depth-imp me))
+          (message "Depth of tree is %d" depth))))))
+
+(defun cg--widget-depth-imp (tree &optional depth)
+  "Return `DEPTH' of `TREE'."
+  (if-let ((depth (or depth 0))
+           (is-valid-tree (tree-widget-p tree))
+           (is-tree-open (widget-get tree :open)))
+      (progn
+        ;; (message "Depth of %s is %d" (widget-get (tree-widget-node tree) :tag) depth)
+        (seq-max
+         (seq-map (lambda (child) (cg--widget-depth-imp child (1+ depth)))
+                  (widget-get tree :children))))
+    (if is-valid-tree depth (1- depth))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -342,9 +375,6 @@ CALCULATE-DEPTH is used to calculate actual depth."
                    (caller (symbol-name tree-item))
                    (parent (or (hierarchy-parent cg--default-hierarchy tree-item) 'root-function)))
 
-               ;; calculate depth.
-               (and depth (> depth cg--current-depth) (setq cg--current-depth depth))
-
                ;; use propertize to avoid this error => Attempt to modify read-only object
                ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
                (insert (propertize caller 'caller-name tree-item 'callee-name parent))))
@@ -357,8 +387,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
 (defun cg--create (call-graph func depth)
   "Generate CALL-GRAPH for FUNC, DEPTH is the depth of caller-map."
   (when (and call-graph func depth)
-    (setq cg--default-hierarchy (hierarchy-new)
-          cg--current-depth 0)
+    (setq cg--default-hierarchy (hierarchy-new))
     (cg--search-callers call-graph func depth)
     (cg--build-hierarchy call-graph func depth)
     (cg--display-hierarchy)))
@@ -537,23 +566,20 @@ With prefix argument, discard whole caller cache."
   "Expand `call-graph' by LEVEL."
   (interactive "p")
   (when-let ((call-graph cg--default-instance)
-             (hierarchy cg--default-hierarchy)
-             (depth (+ cg--current-depth level))
-             (func (car (hierarchy-roots hierarchy))))
+             (depth (+ (cg--widget-depth) level))
+             (func (cg--widget-root)))
     (cg--create call-graph func depth)))
 
 (defun cg/collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
   (interactive "p")
-  (let ((level (- cg--current-depth level)))
+  (let ((level (- (cg--widget-depth) level)))
     (goto-char (point-min))
     (cond
      ((> level 0)
-      (tree-mode-expand-level level)
-      (setq cg--current-depth level))
+      (tree-mode-expand-level level))
      ((<= level 0)
-      (tree-mode-expand-level 1)
-      (setq cg--current-depth 1)))))
+      (tree-mode-expand-level 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mode
