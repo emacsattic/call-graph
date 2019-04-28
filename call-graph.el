@@ -209,7 +209,8 @@ e.g: class::method(arg1, arg2) => method."
     (with-no-warnings (goto-line line-nb))))
 
 (defun cg--find-caller (reference func)
-  "Given a REFERENCE of FUNC, return the caller as (caller . location)."
+  "Given a REFERENCE of FUNC, return the caller as (caller . location).
+When func with args, match number of args as well."
   (when-let ((tmp-split (split-string reference ":"))
              (file-name (car tmp-split))
              (line-nb-str (cadr tmp-split))
