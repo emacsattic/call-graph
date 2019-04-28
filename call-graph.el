@@ -184,7 +184,7 @@ e.g: class::method(arg1, arg2) => method."
       (map-elt locations func-caller-key))))
 
 (defun cg--get-buffer ()
-  "Generate ‘*call-graph*’ buffer."
+  "Generate buffer <*call-graph*>."
   (let ((buffer-name "*call-graph*"))
     (get-buffer-create buffer-name)))
 
@@ -340,12 +340,10 @@ When FUNC with args, match number of args as well."
       (seq-doseq (caller callers)
         (cg--search-callers call-graph caller next-depth)))))
 
-(defun cg--build-hierarchy (call-graph func depth &optional calculate-depth)
+(defun cg--build-hierarchy (call-graph func depth)
   "In CALL-GRAPH, given FUNC, build hierarchy deep to level DEPTH.
 CALCULATE-DEPTH is used to calculate actual depth."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
-             (calculate-depth (or calculate-depth 1))
-             (next-calculate-depth (1+ calculate-depth))
              (hierarchy cg--default-hierarchy)
              (short-func (cg--extract-method-name func))
              (callers
@@ -354,14 +352,12 @@ CALCULATE-DEPTH is used to calculate actual depth."
 
     ;; populate hierarchy data.
     (seq-doseq (caller callers)
-      (hierarchy-add-tree
-       hierarchy caller
-       (lambda (item) (when (eq item caller) (put caller 'caller-depth calculate-depth) func)))
+      (hierarchy-add-tree hierarchy caller (lambda (item) (when (eq item caller) func)))
       (message "Insert child %s under parent %s" (symbol-name caller) (symbol-name func)))
 
     ;; recursively populate callers.
     (seq-doseq (caller callers)
-      (cg--build-hierarchy call-graph caller next-depth next-calculate-depth))))
+      (cg--build-hierarchy call-graph caller next-depth))))
 
 (defun cg--display-hierarchy ()
   "Display `call-graph' in hierarchy."
@@ -371,8 +367,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
           (hierarchy-tree-display
            cg--default-hierarchy
            (lambda (tree-item _)
-             (let ((depth (get tree-item 'caller-depth))
-                   (caller (symbol-name tree-item))
+             (let ((caller (symbol-name tree-item))
                    (parent (or (hierarchy-parent cg--default-hierarchy tree-item) 'root-function)))
 
                ;; use propertize to avoid this error => Attempt to modify read-only object
