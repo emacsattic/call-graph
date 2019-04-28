@@ -351,8 +351,10 @@ CALCULATE-DEPTH is used to calculate actual depth."
 
     ;; populate hierarchy data.
     (seq-doseq (caller callers)
-      (hierarchy-add-tree hierarchy caller (lambda (item) (when (eq item caller) func)))
-      (message "Insert child %s under parent %s" (symbol-name caller) (symbol-name func)))
+      ;; avoid recursive caller
+      (unless (eq caller func)
+        (hierarchy-add-tree hierarchy caller (lambda (item) (when (eq item caller) func)))
+        (message "Insert child %s under parent %s" (symbol-name caller) (symbol-name func))))
 
     ;; recursively populate callers.
     (seq-doseq (caller callers)
