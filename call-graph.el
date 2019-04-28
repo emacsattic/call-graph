@@ -281,11 +281,10 @@ When FUNC with args, match number of args as well."
       (split-string command-out-put "\n" t))))
 
 (defun cg--widget-root ()
-  "Return current tree depth."
+  "Return current tree root."
   (save-mark-and-excursion
     (goto-char (point-min))
-    (let ((me (tree-mode-icon-current-line))
-          (depth 0))
+    (let ((me (tree-mode-icon-current-line)))
       (when (and (not (tree-widget-leaf-node-icon-p me))
                  (tree-widget-p (widget-get me :parent)))
         (setq me (widget-get me :parent))
