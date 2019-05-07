@@ -483,9 +483,8 @@ With prefix argument, discard cached data and re-generate reference data."
                           (setf (map-elt (call-graph--locations call-graph) func-caller-key) locations)
                           (cg--visit-function func-location))))))
 
-(defun cg/remove-caller ()
-  "Within buffer <*call-graph*>, remove caller at point."
-  (interactive)
+(defun cg/remove-single-caller ()
+  "Within buffer <*call-graph*>, remove single caller at point."
   (when (get-char-property (point) 'button)
     (forward-char 4))
   (when-let ((call-graph cg--default-instance)
@@ -497,9 +496,36 @@ With prefix argument, discard cached data and re-generate reference data."
              (filters
               (or (map-elt cg--caller-cache callee deep-copy-of-callers)
                   (setf (map-elt cg--caller-cache callee) deep-copy-of-callers))))
-    (tree-mode-delete-match (symbol-name caller))
+    (unwind-protect
+        (progn
+          (when cg-display-file (remove-hook 'widget-move-hook 'cg/display-file-at-point)) ; disable display-file temporarly
+          (tree-mode-delete-match (symbol-name caller)))
+      (when cg-display-file (add-hook 'widget-move-hook 'cg/display-file-at-point))) ; restore display-file
     (setf (map-elt cg--caller-cache callee)
           (remove caller filters))))
+
+(defun cg/remove-region-callers ()
+  "Within buffer <*call-graph*>, remove callers within active region."
+  (when (region-active-p)
+    (deactivate-mark)
+    (let* ((rbeg (region-beginning))
+           (rend (region-end))
+           rbeg-line rend-line line-iterator)
+      (goto-char rbeg) (setq rbeg-line (line-number-at-pos))
+      (goto-char rend) (setq rend-line (line-number-at-pos))
+      (setq line-iterator (min rbeg-line rend-line))
+      (while (<= line-iterator (max rbeg-line rend-line))
+        (goto-char (point-min)) (forward-line (1- (min rbeg-line rend-line)))
+        (beginning-of-line) (while (not (get-char-property (point) 'button)) (forward-char))
+        (cg/remove-single-caller)
+        (setq line-iterator (1+ line-iterator))))))
+
+(defun cg/remove-caller ()
+  "Within buffer <*call-graph*>, remove caller."
+  (interactive)
+  (if (region-active-p)
+      (cg/remove-region-callers)
+    (cg/remove-single-caller)))
 
 (defun cg/reset-caller-cache ()
   "Within buffer <*call-graph*>, reset caller cache for symbol at point.
@@ -615,7 +641,7 @@ With prefix argument, discard whole caller cache."
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
   (when cg-display-file
-    (add-hook 'widget-move-hook (lambda () (cg/display-file-at-point))))
+    (add-hook 'widget-move-hook 'cg/display-file-at-point))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
