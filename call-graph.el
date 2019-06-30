@@ -1,6 +1,6 @@
 ;;; call-graph.el --- Library to generate call graph for c/c++ functions  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018 Huming Chen
+;; Copyright (C) 2018-2019 by Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
@@ -8,7 +8,7 @@
 ;; Version: 0.1.0
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
-;; Package-Requires: ((emacs "25.1") (cl-lib "0.6.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0"))
+;; Package-Requires: ((emacs "25") (cl-lib "0.6.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0") (anaconda-mode "0.1.13"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -43,6 +43,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'cg-lib)
 (require 'hierarchy)
 (require 'tree-mode)
@@ -157,23 +158,6 @@
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg--extract-namespace-and-method (full-func)
-  "Given FULL-FUNC, return a namespace and method.
-e.g: class::method(arg1, arg2) => class::method."
-  (when-let ((full-func-str full-func)
-             (temp-split (split-string full-func-str "("))
-             (short-func-with-namespace (car temp-split)))
-    short-func-with-namespace))
-
-(defun cg--extract-method-name (full-func)
-  "Given FULL-FUNC, return a SHORT-FUNC.
-e.g: class::method(arg1, arg2) => method."
-  (when-let ((full-func-str (symbol-name full-func))
-             (temp-split (split-string full-func-str "("))
-             (short-func-with-namespace (car temp-split))
-             (short-func (intern (car (last (split-string short-func-with-namespace "::"))))))
-    short-func))
-
 (defun cg--get-func-caller-location (call-graph func caller)
   "In CALL-GRAPH, given FUNC and CALLER, return the caller postion."
   (when (and call-graph func caller)
@@ -188,15 +172,6 @@ e.g: class::method(arg1, arg2) => method."
   (let ((buffer-name "*call-graph*"))
     (get-buffer-create buffer-name)))
 
-(defun cg--get-path-to-global ()
-  "Return path to program GNU GLOBAL."
-  (let ((absolute-path
-         (or (executable-find "global")
-             (expand-file-name "global" cg-path-to-global))))
-    (unless (file-exists-p absolute-path)
-      (error "Failed to find \"GNU GLOBAL\" in path: %s" absolute-path))
-    absolute-path))
-
 (defun cg--visit-function (func-location)
   "Visit function location FUNC-LOCATION."
   (when-let ((temp-split (split-string func-location ":"))
@@ -207,78 +182,6 @@ e.g: class::method(arg1, arg2) => method."
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
     (with-no-warnings (goto-line line-nb))))
-
-(defun cg--find-caller (reference func)
-  "Given a REFERENCE of FUNC, return the caller as (caller . location).
-When FUNC with args, match number of args as well."
-  (when-let ((tmp-split (split-string reference ":"))
-             (file-name (car tmp-split))
-             (line-nb-str (cadr tmp-split))
-             (line-nb (string-to-number line-nb-str))
-             (is-valid-file (file-exists-p file-name))
-             (is-valid-nb (integerp line-nb))
-             func
-             (short-func (cg--extract-method-name func)))
-    (let ((location (concat file-name ":" line-nb-str))
-          (caller nil)
-          (nb-of-func-args (cg--number-of-args (symbol-name func)))
-          (nb-of-reference-args nil)
-          (short-fun-str (symbol-name short-func))
-          (is-valid-reference t))
-      (with-temp-buffer
-        (unwind-protect
-            (progn
-              (cg--customize-c++-generic-expression t)
-              (insert-file-contents-literally file-name)
-              (goto-char (point-min))
-              (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
-                (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
-              (goto-char (point-min))
-              (forward-line (1- line-nb))
-              (setq-local c++-mode-hook nil)
-              (setq imenu--index-alist nil)
-              (c++-mode)
-              (setq-local which-func-cleanup-function nil)
-              (which-function-mode t)
-              ;; make sure reference contains a function call
-              (when cg-ignore-invalid-reference
-                (save-mark-and-excursion
-                  (end-of-line)
-                  (let ((end-of-line-pos (point)))
-                    (beginning-of-line)
-                    (if (not (re-search-forward (concat short-fun-str "\\([ \t\n]\\|\\\\\n\\)*(") nil t))
-                        (setq is-valid-reference nil)
-                      (when (> (match-beginning 0) end-of-line-pos)
-                        (setq is-valid-reference nil))))))
-              (when is-valid-reference
-                (setq nb-of-reference-args (cg--scan-func-args short-fun-str))
-                (if (and nb-of-func-args nb-of-reference-args)
-                    ;; TODO: check if func has args with default value
-                    ;; if not, we should use exact match here.
-                    (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
-                      (setq caller (which-function)))
-                  (setq caller (which-function)))
-                (unless cg-display-func-args
-                  (setq caller (cg--extract-namespace-and-method caller)))))
-          (cg--customize-c++-generic-expression nil)))
-      (when caller
-        (cons (intern caller) location)))))
-
-(defun cg--find-references (func)
-  "Given a FUNC, return all references as a list."
-  (let ((command
-         (format "%s -a --result=grep -r %s"
-                 (cg--get-path-to-global)
-                 (shell-quote-argument (symbol-name func))))
-        (filter-separator " | ")
-        command-filter command-out-put)
-    (when (and (> (length cg-search-filters) 0)
-               (setq command-filter
-                     (mapconcat #'identity (delq nil cg-search-filters) filter-separator))
-               (not (string= command-filter filter-separator)))
-      (setq command (concat command filter-separator command-filter)))
-    (when (setq command-out-put (shell-command-to-string command))
-      (split-string command-out-put "\n" t))))
 
 (defun cg--widget-root ()
   "Return current tree root."
@@ -411,11 +314,15 @@ With prefix argument, discard cached data and re-generate reference data."
           (window-configuration (current-window-configuration))
           (selected-window (frame-selected-window)))
 
-      (when-let ((file-name (buffer-file-name))
-                 (line-nb (line-number-at-pos))
-                 (location (concat file-name ":" (number-to-string line-nb))))
-        ;; save root function location
-        (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location)))
+      (cond
+       ((equal major-mode 'c++-mode)
+        (load-library "cg-cpp"))
+       ((equal major-mode 'c-mode)
+        (load-library "cg-cpp"))
+       ((equal major-mode 'python-mode)
+        (load-library "cg-python")))
+
+      (cg--handle-root-function call-graph)
 
       (save-mark-and-excursion
         (cg--create call-graph func cg-initial-max-depth)
