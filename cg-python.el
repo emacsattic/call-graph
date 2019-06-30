@@ -31,6 +31,7 @@
 (require 'anaconda-mode)
 (require 'which-func)
 (require 'seq)
+(require 'subr-x)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
