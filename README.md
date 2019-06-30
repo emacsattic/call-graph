@@ -33,6 +33,7 @@ Or install from [melpa](https://melpa.org/#/call-graph).
 * `hierarchy`
 * `tree-mode`
 * `ivy`
+* `anaconda-mode`
 
 Basicly `call-graph` just recursively call `Global` to find caller of
 current function and eventually build up a `call-graph` tree.
@@ -127,6 +128,7 @@ Lots more need to be improved.
 - [x] Support manually remove wrong callers.
 - [x] Support persistence of call-graph cache data.
 - [x] Toggle show function args in call-graph.
+- [x] Add basic python support.
 
 # Contributing
 Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
