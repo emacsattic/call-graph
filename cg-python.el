@@ -29,9 +29,7 @@
 
 (require 'python)
 (require 'anaconda-mode)
-(require 'which-func)
-(require 'seq)
-(require 'subr-x)
+(require 'cg-lib)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
@@ -56,14 +54,14 @@
 ;; Interface
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg--extract-method-name (full-func)
+(defun cg--python-extract-method-name (full-func)
   "Given FULL-FUNC, return a SHORT-FUNC.
 e.g: class.method => method."
   (when-let ((full-func-str (symbol-name full-func))
              (short-func (intern (car (last (split-string full-func-str "\\."))))))
     short-func))
 
-(defun cg--find-caller (reference &optional func)
+(defun cg--python-find-caller (reference &optional func)
   "Given a REFERENCE of FUNC, return the caller as (caller . location).
 When FUNC with args, match number of args as well."
   (when-let ((tmp-split (split-string reference ":"))
@@ -97,7 +95,7 @@ When FUNC with args, match number of args as well."
                 cg--internal-path (pythonic-python-readable-file-name file-name))
           (cons (intern short-caller-str) location))))))
 
-(defun cg--find-references (func)
+(defun cg--python-find-references (func)
   "Given FUNC, return all references as a list."
   (cg--anaconda-mode-call
    "usages"
@@ -105,7 +103,7 @@ When FUNC with args, match number of args as well."
      (setq cg--internal-references (cg--references-to-list result))))
   cg--internal-references)
 
-(defun cg--handle-root-function (call-graph)
+(defun cg--python-handle-root-function (call-graph)
   "Save root function in CALL-GRAPH."
   (when-let ((file-name (buffer-file-name))
              (line-nb (line-number-at-pos))
