@@ -28,9 +28,7 @@
 ;;; Code:
 
 (require 'cc-mode)
-(require 'which-func)
-(require 'seq)
-(require 'subr-x)
+(require 'cg-lib)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
@@ -61,7 +59,7 @@
 ;; Interface
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg--extract-method-name (full-func)
+(defun cg--cpp-extract-method-name (full-func)
   "Given FULL-FUNC, return a SHORT-FUNC.
 e.g: class::method(arg1, arg2) => method."
   (when-let ((full-func-str (symbol-name full-func))
@@ -70,7 +68,7 @@ e.g: class::method(arg1, arg2) => method."
              (short-func (intern (car (last (split-string short-func-with-namespace "::"))))))
     short-func))
 
-(defun cg--find-caller (reference func)
+(defun cg--cpp-find-caller (reference func)
   "Given a REFERENCE of FUNC, return the caller as (caller . location).
 When FUNC with args, match number of args as well."
   (when-let ((tmp-split (split-string reference ":"))
@@ -126,7 +124,7 @@ When FUNC with args, match number of args as well."
       (when caller
         (cons (intern caller) location)))))
 
-(defun cg--find-references (func)
+(defun cg--cpp-find-references (func)
   "Given a FUNC, return all references as a list."
   (let ((command
          (format "%s -a --result=grep -r %s"
@@ -142,7 +140,7 @@ When FUNC with args, match number of args as well."
     (when (setq command-out-put (shell-command-to-string command))
       (split-string command-out-put "\n" t))))
 
-(defun cg--handle-root-function (call-graph)
+(defun cg--cpp-handle-root-function (call-graph)
   "Save root function in CALL-GRAPH."
   (when-let ((file-name (buffer-file-name))
              (line-nb (line-number-at-pos))
