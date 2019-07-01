@@ -37,6 +37,7 @@ Or install from [melpa](https://melpa.org/#/call-graph).
 
 For C++, `call-graph` will recursively call `Global` to find caller of
 current function and eventually build up a `call-graph` tree.
+
 For python, `call-graph` rely on `anaconda-mode` to provide caller of
 current function and eventually build up a `call-graph` tree.
 
