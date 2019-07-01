@@ -43,11 +43,12 @@
 
 ;;; Code:
 
-(require 'cl-lib)
+(require 'cg-cpp)
 (require 'cg-lib)
+(require 'cg-python)
 (require 'hierarchy)
-(require 'tree-mode)
 (require 'ivy)
+(require 'tree-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Customizable
@@ -302,6 +303,22 @@ CALCULATE-DEPTH is used to calculate actual depth."
               cg-persist-caller-cache nil)
       (setq cg--caller-cache (make-hash-table :test #'equal)))))
 
+(defun cg--dispatch-interface()
+  "Dispatch interface for different language."
+  (cond
+   ((member major-mode '(c-mode c++-mode))
+    (progn
+      (defalias 'cg--extract-method-name 'cg--cpp-extract-method-name)
+      (defalias 'cg--find-caller 'cg--cpp-find-caller)
+      (defalias 'cg--find-references 'cg--cpp-find-references)
+      (defalias 'cg--handle-root-function 'cg--cpp-handle-root-function)))
+   ((equal major-mode 'python-mode)
+    (progn
+      (defalias 'cg--extract-method-name 'cg--python-extract-method-name)
+      (defalias 'cg--find-caller 'cg--python-find-caller)
+      (defalias 'cg--find-references 'cg--python-find-references)
+      (defalias 'cg--handle-root-function 'cg--python-handle-root-function)))))
+
 ;;;###autoload
 (defun call-graph (&optional func)
   "Generate `call-graph' for FUNC / func-at-point / func-in-active-rigion.
@@ -314,14 +331,7 @@ With prefix argument, discard cached data and re-generate reference data."
           (window-configuration (current-window-configuration))
           (selected-window (frame-selected-window)))
 
-      (cond
-       ((equal major-mode 'c++-mode)
-        (load-library "cg-cpp"))
-       ((equal major-mode 'c-mode)
-        (load-library "cg-cpp"))
-       ((equal major-mode 'python-mode)
-        (load-library "cg-python")))
-
+      (cg--dispatch-interface)
       (cg--handle-root-function call-graph)
 
       (save-mark-and-excursion
