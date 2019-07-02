@@ -50,6 +50,9 @@
 (defvar cg--internal-path nil
   "Used by internal functions.")
 
+(defvar cg--map-path-to-source (make-hash-table :test #'equal)
+  "Map path to source.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,10 +64,11 @@ e.g: class.method => method."
              (short-func (intern (car (last (split-string full-func-str "\\."))))))
     short-func))
 
-(defun cg--python-find-caller (reference &optional func)
+(defun cg--python-find-caller (reference func)
   "Given a REFERENCE of FUNC, return the caller as (caller . location).
 When FUNC with args, match number of args as well."
-  (when-let ((tmp-split (split-string reference ":"))
+  (when-let ((is-valid-func func)
+             (tmp-split (split-string reference ":"))
              (file-name (car tmp-split))
              (line-nb-str (cadr tmp-split))
              (line-nb (string-to-number line-nb-str))
@@ -73,7 +77,7 @@ When FUNC with args, match number of args as well."
     (let ((location (concat file-name ":" line-nb-str))
           (caller nil))
       (with-temp-buffer
-        ;; (with-current-buffer "TEST"
+      ;; (with-current-buffer "TEST"
         ;; (erase-buffer)
         (insert-file-contents-literally file-name)
         (goto-char (point-min))
@@ -84,40 +88,58 @@ When FUNC with args, match number of args as well."
         (setq-local which-func-cleanup-function nil)
         (which-function-mode t)
         (setq caller (which-function))
-        (when-let (caller
+        (when-let ((is-valid-caller (not (equal caller (symbol-name func))))
                    (short-caller (cg--extract-method-name (intern caller)))
                    (short-caller-str (symbol-name short-caller)))
           (beginning-of-defun)
           (search-forward short-caller-str)
-          (setq cg--internal-source (buffer-substring-no-properties (point-min) (point-max))
-                cg--internal-line (line-number-at-pos)
-                cg--internal-column (current-column)
-                cg--internal-path (pythonic-python-readable-file-name file-name))
+          (cg--save-param-in-symbol (intern short-caller-str)
+                                    (buffer-substring-no-properties (point-min) (point-max))
+                                    (line-number-at-pos)
+                                    (current-column)
+                                    file-name)
           (cons (intern short-caller-str) location))))))
 
 (defun cg--python-find-references (func)
   "Given FUNC, return all references as a list."
+  (cg--read-param-from-symbol func)
   (cg--anaconda-mode-call
    "usages"
    (lambda (result)
      (setq cg--internal-references (cg--references-to-list result))))
   cg--internal-references)
 
-(defun cg--python-handle-root-function (call-graph)
-  "Save root function in CALL-GRAPH."
+(defun cg--python-handle-root-function (call-graph func)
+  "Save location of root function FUNC in CALL-GRAPH."
   (when-let ((file-name (buffer-file-name))
              (line-nb (line-number-at-pos))
              (location (concat file-name ":" (number-to-string line-nb))))
     ;; save root function location
     (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location))
-    (setq cg--internal-source (buffer-substring-no-properties (point-min) (point-max))
-          cg--internal-line (line-number-at-pos)
-          cg--internal-column (current-column)
-          cg--internal-path (pythonic-python-readable-file-name (buffer-file-name)))))
+    ;; save root function param
+    (cg--save-param-in-symbol func
+                              (buffer-substring-no-properties (point-min) (point-max))
+                              (line-number-at-pos)
+                              (current-column)
+                              file-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun cg--save-param-in-symbol (symbol source line column path)
+  "Save param SOURCE, LINE, COLUMN, PATH in SYMBOL."
+  (setf (map-elt cg--map-path-to-source path) source)
+  (put symbol 'param-line line)
+  (put symbol 'param-column column)
+  (put symbol 'param-path path))
+
+(defun cg--read-param-from-symbol (symbol)
+  "Read param from SYMBOL."
+  (setq cg--internal-source (map-elt cg--map-path-to-source (get symbol 'param-path))
+        cg--internal-line (get symbol 'param-line)
+        cg--internal-column (get symbol 'param-column)
+        cg--internal-path (pythonic-python-readable-file-name (get symbol 'param-path))))
 
 (defun cg--references-to-list (result)
   "Return refererces as a list from RESULT."
