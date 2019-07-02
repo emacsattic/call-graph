@@ -140,13 +140,13 @@ When FUNC with args, match number of args as well."
     (when (setq command-out-put (shell-command-to-string command))
       (split-string command-out-put "\n" t))))
 
-(defun cg--cpp-handle-root-function (call-graph)
-  "Save root function in CALL-GRAPH."
+(defun cg--cpp-handle-root-function (call-graph func)
+  "Save location of root function FUNC in CALL-GRAPH."
   (when-let ((file-name (buffer-file-name))
              (line-nb (line-number-at-pos))
              (location (concat file-name ":" (number-to-string line-nb))))
     ;; save root function location
-    (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location)))  )
+    (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
