@@ -146,7 +146,7 @@ number position, column number position and file path."
         (url-request-data (cg--anaconda-mode-jsonrpc-request command)))
     (url-retrieve
      (format "http://%s:%s" (anaconda-mode-host) (anaconda-mode-port))
-     (anaconda-mode-create-response-handler callback)
+     (cg--anaconda-mode-create-response-handler callback)
      nil
      t)))
 
@@ -163,6 +163,40 @@ number position, column number position and file path."
                (line . ,cg--internal-line)
                (column . ,cg--internal-column)
                (path . ,cg--internal-path)))))
+
+(defun cg--anaconda-mode-create-response-handler (callback)
+  "Create server response handler based on CALLBACK function."
+  (let ((anaconda-mode-request-buffer (current-buffer)))
+    (lambda (status)
+      (let ((http-buffer (current-buffer)))
+        (unwind-protect
+            (progn
+              (search-forward-regexp "\r?\n\r?\n" nil t)
+              (let ((response
+                     (condition-case nil
+                         (json-read)
+                       ((json-readtable-error json-end-of-file end-of-file)
+                        (let ((response (concat (format "# status: %s\n# point: %s\n" status (point))
+                                                (buffer-string))))
+                          (with-current-buffer (get-buffer-create anaconda-mode-response-buffer)
+                            (erase-buffer)
+                            (insert response)
+                            (goto-char (point-min)))
+                          nil)))))
+                (if (null response)
+                    (message "Cannot read anaconda-mode server response")
+                  (if (assoc 'error response)
+                      (let* ((error-structure (cdr (assoc 'error response)))
+                             (error-message (cdr (assoc 'message error-structure)))
+                             (error-data (cdr (assoc 'data error-structure)))
+                             (error-template (if error-data "%s: %s" "%s")))
+                        (apply 'message error-template (delq nil (list error-message error-data))))
+                    (with-current-buffer anaconda-mode-request-buffer
+                      (let ((result (cdr (assoc 'result response))))
+                        ;; Terminate `apply' call with empty list so response
+                        ;; will be treated as single argument.
+                        (apply callback result nil)))))))
+          (kill-buffer http-buffer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests
