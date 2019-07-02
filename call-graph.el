@@ -145,6 +145,13 @@
             (cl-pushnew location (map-elt (call-graph--locations call-graph) func-caller-key (list))
                         :test #'equal)))))))
 
+(defun cg--is-valid (call-graph)
+  "Check if CALL-GRAPH is valid."
+  (when (and call-graph
+             (not (zerop (map-length (call-graph--callers call-graph))))
+             (not (zerop (map-length (call-graph--locations call-graph)))))
+    t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Persitence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,7 +301,9 @@ CALCULATE-DEPTH is used to calculate actual depth."
 
 (defun cg--initialize ()
   "Initialize data for `call-graph'."
-  (when (or current-prefix-arg (not cg--default-instance))
+  (when (or current-prefix-arg
+            (not cg--default-instance)
+            (not (cg--is-valid cg--default-instance)))
     (setq cg--default-instance (cg-new))) ; clear cached reference
 
   (when (not cg--caller-cache)
