@@ -49,12 +49,6 @@
    "\\([ \t\n]\\|\\\\\n\\)*(") ;; match left-parens
   "Regexp to match function til its left parens.")
 
-(defconst cg--orgin-cc-menus-association (assoc 'cc-menus after-load-alist)
-  "Save currunt association value for entry `cc-menus' in `after-load-alist'.")
-
-(defconst cg--orgin-general-function-name-regexp (nth 2 cc-imenu-c++-generic-expression)
-  "Save current generic fucntion name regexp.")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Interface
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,41 +80,38 @@ When FUNC with args, match number of args as well."
           (short-fun-str (symbol-name short-func))
           (is-valid-reference t))
       (with-temp-buffer
-        (unwind-protect
-            (progn
-              (cg--customize-c++-generic-expression t)
-              (insert-file-contents-literally file-name)
-              (goto-char (point-min))
-              (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
-                (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
-              (goto-char (point-min))
-              (forward-line (1- line-nb))
-              (setq-local c++-mode-hook nil)
-              (setq imenu--index-alist nil)
-              (c++-mode)
-              (setq-local which-func-cleanup-function nil)
-              (which-function-mode t)
-              ;; make sure reference contains a function call
-              (when cg-ignore-invalid-reference
-                (save-mark-and-excursion
-                  (end-of-line)
-                  (let ((end-of-line-pos (point)))
-                    (beginning-of-line)
-                    (if (not (re-search-forward (concat short-fun-str "\\([ \t\n]\\|\\\\\n\\)*(") nil t))
-                        (setq is-valid-reference nil)
-                      (when (> (match-beginning 0) end-of-line-pos)
-                        (setq is-valid-reference nil))))))
-              (when is-valid-reference
-                (setq nb-of-reference-args (cg--scan-func-args short-fun-str))
-                (if (and nb-of-func-args nb-of-reference-args)
-                    ;; TODO: check if func has args with default value
-                    ;; if not, we should use exact match here.
-                    (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
-                      (setq caller (which-function)))
-                  (setq caller (which-function)))
-                (unless cg-display-func-args
-                  (setq caller (cg--extract-namespace-and-method caller)))))
-          (cg--customize-c++-generic-expression nil)))
+        (cg--show-function-args)
+        (insert-file-contents-literally file-name)
+        (goto-char (point-min))
+        (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
+          (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
+        (goto-char (point-min))
+        (forward-line (1- line-nb))
+        (setq-local c++-mode-hook nil)
+        (setq imenu--index-alist nil)
+        (c++-mode)
+        (setq-local which-func-cleanup-function nil)
+        (which-function-mode t)
+        ;; make sure reference contains a function call
+        (when cg-ignore-invalid-reference
+          (save-mark-and-excursion
+            (end-of-line)
+            (let ((end-of-line-pos (point)))
+              (beginning-of-line)
+              (if (not (re-search-forward (concat short-fun-str "\\([ \t\n]\\|\\\\\n\\)*(") nil t))
+                  (setq is-valid-reference nil)
+                (when (> (match-beginning 0) end-of-line-pos)
+                  (setq is-valid-reference nil))))))
+        (when is-valid-reference
+          (setq nb-of-reference-args (cg--scan-func-args short-fun-str))
+          (if (and nb-of-func-args nb-of-reference-args)
+              ;; TODO: check if func has args with default value
+              ;; if not, we should use exact match here.
+              (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
+                (setq caller (which-function)))
+            (setq caller (which-function)))
+          (unless cg-display-func-args
+            (setq caller (cg--extract-namespace-and-method caller)))))
       (when caller
         (cons (intern caller) location)))))
 
@@ -169,37 +160,31 @@ e.g: class::method(arg1, arg2) => class::method."
       (error "Failed to find \"GNU GLOBAL\" in path: %s" absolute-path))
     absolute-path))
 
-(defun cg--customize-c++-generic-expression (toggle)
-  "When TOGGLE is t, customiz c++-generic-expression to support function args.
-else, restore original c++-generic-expression."
-  (if toggle
-      (with-eval-after-load 'cc-menus
-        ;; enable imenu to display both function name and its arg-list
-        (setf (nth 2 cc-imenu-c++-generic-expression)
-              ;; General function name regexp
-              `(nil
-                ,(concat
-                  "^\\<"                                 ; line MUST start with word char
-                  ;; \n added to prevent overflow in regexp matcher.
-                  ;; https://lists.gnu.org/r/emacs-pretest-bug/2007-02/msg00021.html
-                  "[^()\n]*"                             ; no parentheses before
-                  "[^" c-alnum "_:<>~]"                  ; match any non-identifier char
-                  "\\(?2:\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ; 2ND-GROUP MATCH FUNCTION AND ITS ARGS WHILE 1ST-GROUP MATCH FUNCTION NAME
-                  "\\([ \t\n]\\|\\\\\n\\)*("            ; see above, BUT the arg list
-                  "\\([ \t\n]\\|\\\\\n\\)*"             ; must not start
-                  "\\([^ \t\n(*]"                       ; with an asterisk or parentheses
-                  "[^()]*\\(([^()]*)[^()]*\\)*"         ; Maybe function pointer arguments
-                  "\\)?)\\)"                            ; END OF 2ND-GROUP
-                  "\\([ \t\n]\\|\\\\\n\\)*[^ \t\n;(]"
-                  ) 2)                                  ; USE 2ND-GROUP AS IMENU ITEM
-              cc-imenu-c-generic-expression cc-imenu-c++-generic-expression))
-    (progn
-      (setq after-load-alist (assq-delete-all 'cc-menus after-load-alist))
-      (when cg--orgin-cc-menus-association
-        (push cg--orgin-cc-menus-association after-load-alist))
-      (setf (nth 2 cc-imenu-c++-generic-expression) cg--orgin-general-function-name-regexp))))
+(defun cg--show-function-args ()
+  "Customize c++-generic-expression to support function args."
+  (make-local-variable 'cc-imenu-c++-generic-expression)
+  (make-local-variable 'cc-imenu-c-generic-expression)
+  ;; enable imenu to display both function name and its arg-list
+  (setf (nth 2 cc-imenu-c++-generic-expression)
+        ;; General function name regexp
+        `(nil
+          ,(concat
+            "^\\<"                                 ; line MUST start with word char
+            ;; \n added to prevent overflow in regexp matcher.
+            ;; https://lists.gnu.org/r/emacs-pretest-bug/2007-02/msg00021.html
+            "[^()\n]*"                             ; no parentheses before
+            "[^" c-alnum "_:<>~]"                  ; match any non-identifier char
+            "\\(?2:\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ; 2ND-GROUP MATCH FUNCTION AND ITS ARGS WHILE 1ST-GROUP MATCH FUNCTION NAME
+            "\\([ \t\n]\\|\\\\\n\\)*("            ; see above, BUT the arg list
+            "\\([ \t\n]\\|\\\\\n\\)*"             ; must not start
+            "\\([^ \t\n(*]"                       ; with an asterisk or parentheses
+            "[^()]*\\(([^()]*)[^()]*\\)*"         ; Maybe function pointer arguments
+            "\\)?)\\)"                            ; END OF 2ND-GROUP
+            "\\([ \t\n]\\|\\\\\n\\)*[^ \t\n;(]"
+            ) 2)                                  ; USE 2ND-GROUP AS IMENU ITEM
+        cc-imenu-c-generic-expression cc-imenu-c++-generic-expression))
 
-(defun cg--number-of-args(func-with-args)
+(defun cg--number-of-args (func-with-args)
   "Count number of C++ function arguments of FUNC-WITH-ARGS."
   (condition-case nil
       (with-temp-buffer
@@ -247,7 +232,7 @@ else, restore original c++-generic-expression."
               (cg--number-of-args func-with-args-str)))
         (error nil)))))
 
-(defun cg-get-number-of-args(&optional func-with-args)
+(defun cg-get-number-of-args (&optional func-with-args)
   "Interactively get number of arguments of FUNC-WITH-ARGS."
   (interactive (list (cg--read-from-minibuffer "Input C++ function with args")))
   (deactivate-mark)
