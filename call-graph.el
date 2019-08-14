@@ -43,7 +43,7 @@
 
 ;;; Code:
 
-(require 'cg-cpp)
+(require 'cg-global)
 (require 'cg-lib)
 (require 'cg-python)
 (require 'hierarchy)
@@ -317,16 +317,22 @@ CALCULATE-DEPTH is used to calculate actual depth."
   (cond
    ((member major-mode '(c-mode c++-mode))
     (progn
-      (defalias 'cg--extract-method-name 'cg--cpp-extract-method-name)
-      (defalias 'cg--find-caller 'cg--cpp-find-caller)
-      (defalias 'cg--find-references 'cg--cpp-find-references)
-      (defalias 'cg--handle-root-function 'cg--cpp-handle-root-function)))
+      (defalias 'cg--extract-method-name 'cg--global-extract-method-name)
+      (defalias 'cg--find-caller 'cg--global-find-caller)
+      (defalias 'cg--find-references 'cg--global-find-references)
+      (defalias 'cg--handle-root-function 'cg--global-handle-root-function)))
    ((equal major-mode 'python-mode)
     (progn
       (defalias 'cg--extract-method-name 'cg--python-extract-method-name)
       (defalias 'cg--find-caller 'cg--python-find-caller)
       (defalias 'cg--find-references 'cg--python-find-references)
-      (defalias 'cg--handle-root-function 'cg--python-handle-root-function)))))
+      (defalias 'cg--handle-root-function 'cg--python-handle-root-function)))
+   ((equal major-mode 'emacs-lisp-mode)
+    (progn
+      (defalias 'cg--extract-method-name 'cg--global-extract-method-name)
+      (defalias 'cg--find-caller 'cg--global-find-caller)
+      (defalias 'cg--find-references 'cg--global-find-references)
+      (defalias 'cg--handle-root-function 'cg--global-handle-root-function)))))
 
 ;;;###autoload
 (defun call-graph (&optional func)
