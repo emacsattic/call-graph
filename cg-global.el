@@ -1,4 +1,4 @@
-;;; cg-cpp.el --- call-graph C++ support. -*- lexical-binding: t -*-
+;;; cg-global.el --- call-graph C++ support. -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2019 Huming Chen
 
@@ -53,7 +53,7 @@
 ;; Interface
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg--cpp-extract-method-name (full-func)
+(defun cg--global-extract-method-name (full-func)
   "Given FULL-FUNC, return a SHORT-FUNC.
 e.g: class::method(arg1, arg2) => method."
   (when-let ((full-func-str (symbol-name full-func))
@@ -62,7 +62,7 @@ e.g: class::method(arg1, arg2) => method."
              (short-func (intern (car (last (split-string short-func-with-namespace "::"))))))
     short-func))
 
-(defun cg--cpp-find-caller (reference func)
+(defun cg--global-find-caller (reference func)
   "Given a REFERENCE of FUNC, return the caller as (caller . location).
 When FUNC with args, match number of args as well."
   (when-let ((tmp-split (split-string reference ":"))
@@ -78,7 +78,8 @@ When FUNC with args, match number of args as well."
           (nb-of-func-args (cg--number-of-args (symbol-name func)))
           (nb-of-reference-args nil)
           (short-fun-str (symbol-name short-func))
-          (is-valid-reference t))
+          (is-valid-reference t)
+          (origin-major-mode major-mode))
       (with-temp-buffer
         (cg--show-function-args)
         (insert-file-contents-literally file-name)
@@ -87,9 +88,9 @@ When FUNC with args, match number of args as well."
           (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
         (goto-char (point-min))
         (forward-line (1- line-nb))
-        (setq-local c++-mode-hook nil)
+        (cg--setq-local-mode-hook-nil origin-major-mode)
         (setq imenu--index-alist nil)
-        (c++-mode)
+        (funcall origin-major-mode)
         (setq-local which-func-cleanup-function nil)
         (which-function-mode t)
         ;; make sure reference contains a function call
@@ -115,7 +116,7 @@ When FUNC with args, match number of args as well."
       (when caller
         (cons (intern caller) location)))))
 
-(defun cg--cpp-find-references (func)
+(defun cg--global-find-references (func)
   "Given a FUNC, return all references as a list."
   (let ((command
          (format "%s -a --result=grep -r %s"
@@ -131,7 +132,7 @@ When FUNC with args, match number of args as well."
     (when (setq command-out-put (shell-command-to-string command))
       (split-string command-out-put "\n" t))))
 
-(defun cg--cpp-handle-root-function (call-graph func)
+(defun cg--global-handle-root-function (call-graph func)
   "Save location of root function FUNC in CALL-GRAPH."
   (when-let ((file-name (buffer-file-name))
              (line-nb (line-number-at-pos))
@@ -241,6 +242,28 @@ e.g: class::method(arg1, arg2) => class::method."
         (message "Number of args is: %d" nb-args)
       (message "Failed to get argument."))))
 
+(defun cg--setq-local-mode-hook-nil (mode)
+  (cond ((eql mode 'c++-mode)
+         (setq-local c++-mode-hook nil))
+        ((eql mode 'c-mode)
+         (setq-local c-mode-hook nil))
+        ((eql mode 'emacs-lisp-mode)
+         (setq-local emacs-lisp-mode-hook nil))
+        ((eql mode 'js2-mode)
+         (setq-local js2-mode-hook nil))
+        ((eql mode 'js2-mode)
+         (setq-local js2-mode-hook nil))
+        ((eql mode 'lisp-mode)
+         (setq-local lisp-mode-hook nil))
+        ((eql mode 'clojure-mode)
+         (setq-local clojure-mode-hook nil))
+        ((eql mode 'python-mode)
+         (setq-local python-mode-hook nil))
+        ((eql mode 'ruby-mode)
+         (setq-local ruby-mode-hook nil))
+        ((eql mode 'java-mode)
+         (setq-local java-mode-hook nil))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,5 +271,5 @@ e.g: class::method(arg1, arg2) => class::method."
 ;;; @see cg-test.el
 
 
-(provide 'cg-cpp)
-;;; cg-cpp.el ends here
+(provide 'cg-global)
+;;; cg-global.el ends here
