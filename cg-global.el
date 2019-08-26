@@ -187,51 +187,49 @@ e.g: class::method(arg1, arg2) => class::method."
 
 (defun cg--number-of-args (func-with-args)
   "Count number of C++ function arguments of FUNC-WITH-ARGS."
-  (condition-case nil
-      (with-temp-buffer
-        (insert func-with-args)
-        (check-parens) ;; check parentheses balance
-        (goto-char (point-min))
-        (unless (re-search-forward cg--pattern-to-func-left-parens nil t)
-          (error "Failed to find left-parens"))
-        (delete-region (point-min) (point))
-        (goto-char (point-max))
-        (delete-region (search-backward ")" nil t) (point-max))
-        ;; (message (buffer-string))
-        (save-match-data ;; save previous match-data and restore later
-          ;; Map over the elements of cg--pattern-replace-alist
-          ;; (pattern, replace)
-          (dolist (pair cg--pattern-replace-alist)
-            (let ((pattern (car pair))
-                  (replace (cadr pair)))
-              (goto-char (point-min))
-              (while (re-search-forward pattern nil t) ;; patttern exists
-                (goto-char (point-min)) ;; start from begining
-                (while (re-search-forward pattern nil t) ;; start replacing
-                  (replace-match replace t nil))
-                (goto-char (point-min))))) ;; go over and do match-replace again
-          ;; all noise cleared, count number of args
-          (let ((args-string (cg--trim-string (buffer-string))))
-            (cond ((string= "" args-string) 0)
-                  ((not (string= "" args-string))
-                   (length (split-string args-string ",")))))))
-    (error nil)))
+  (ignore-errors
+    (with-temp-buffer
+      (insert func-with-args)
+      (check-parens) ;; check parentheses balance
+      (goto-char (point-min))
+      (unless (re-search-forward cg--pattern-to-func-left-parens nil t)
+        (error "Failed to find left-parens"))
+      (delete-region (point-min) (point))
+      (goto-char (point-max))
+      (delete-region (search-backward ")" nil t) (point-max))
+      ;; (message (buffer-string))
+      (save-match-data ;; save previous match-data and restore later
+        ;; Map over the elements of cg--pattern-replace-alist
+        ;; (pattern, replace)
+        (dolist (pair cg--pattern-replace-alist)
+          (let ((pattern (car pair))
+                (replace (cadr pair)))
+            (goto-char (point-min))
+            (while (re-search-forward pattern nil t) ;; patttern exists
+              (goto-char (point-min)) ;; start from begining
+              (while (re-search-forward pattern nil t) ;; start replacing
+                (replace-match replace t nil))
+              (goto-char (point-min))))) ;; go over and do match-replace again
+        ;; all noise cleared, count number of args
+        (let ((args-string (cg--trim-string (buffer-string))))
+          (cond ((string= "" args-string) 0)
+                ((not (string= "" args-string))
+                 (length (split-string args-string ",")))))))))
 
 (defun cg--scan-func-args (func)
   "Scan FUNC and its args from current position, and return number of args."
   (save-mark-and-excursion
     (save-match-data
-      (condition-case nil
-          (let (func-beginning
-                func-with-args-str)
-            (search-forward func)
-            (setq func-beginning (match-beginning 0))
-            (forward-sexp)
-            (setq func-with-args-str
-                  (buffer-substring-no-properties func-beginning (point)))
-            (when func-with-args-str
-              (cg--number-of-args func-with-args-str)))
-        (error nil)))))
+      (ignore-errors
+        (let (func-beginning
+              func-with-args-str)
+          (search-forward func)
+          (setq func-beginning (match-beginning 0))
+          (forward-sexp)
+          (setq func-with-args-str
+                (buffer-substring-no-properties func-beginning (point)))
+          (when func-with-args-str
+            (cg--number-of-args func-with-args-str)))))))
 
 (defun cg-get-number-of-args (&optional func-with-args)
   "Interactively get number of arguments of FUNC-WITH-ARGS."
