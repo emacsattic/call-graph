@@ -104,7 +104,7 @@
   "Default CALL-GRAPH instance.")
 
 (defvar cg--default-hierarchy nil
-  "Hierarchy to display call-graph.")
+  "Hierarchy to display `call-graph'.")
 
 (defvar cg--window-configuration nil
   "The window configuration to be restored upon closing the buffer.")
@@ -121,10 +121,11 @@
                (:constructor call-graph--make)
                (:conc-name call-graph--))
   (callers (make-hash-table :test #'equal)) ; map func to its callers
-  (locations (make-hash-table :test #'equal))) ; map func <- caller to its locations
+  (locations (make-hash-table :test #'equal)) ; map func <- caller to its locations
+  (data-mode nil)) ; to which mode call-graph data belongs
 
 (defun cg-new ()
-  "Create a call-graph and return it."
+  "Create a `call-graph' and return it."
   (call-graph--make))
 
 (defun cg--add-callers (call-graph func callers)
@@ -156,7 +157,7 @@
 ;; Persitence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg/prepare-persistent-data ()
+(defun cg-prepare-persistent-data ()
   "Prepare data for persistence."
   (when cg--caller-cache
     (setq cg-persist-caller-cache
@@ -233,14 +234,16 @@
 (defun cg--search-callers (call-graph func depth)
   "In CALL-GRAPH, given FUNC, search callers deep to level DEPTH."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
-             (short-func (cg--extract-method-name func)))
+             (short-func (cg--extract-method-name func))
+             (data-mode (call-graph--data-mode call-graph)))
     (let ((caller-list (list))
           (callers (map-elt (call-graph--callers call-graph) short-func (list))))
 
       ;; callers not found.
       (unless callers
         (seq-doseq (reference (cg--find-references short-func))
-          (when-let ((caller-info (and reference (cg--find-caller reference func))))
+          (when-let ((caller-info
+                      (and reference (cg--find-caller reference func data-mode))))
             (message (format "Search returns: %s" (symbol-name (car caller-info))))
             (push caller-info caller-list)))
         (cg--add-callers call-graph func caller-list)
@@ -289,7 +292,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (when switch-buffer
       (switch-to-buffer-other-window hierarchy-buffer))
     (call-graph-mode)
-    (cg/widget-expand-all)))
+    (cg-widget-expand-all)))
 
 (defun cg--create (call-graph func depth)
   "Generate CALL-GRAPH for FUNC, DEPTH is the depth of caller-map."
@@ -310,7 +313,10 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (if cg-persist-caller-cache ; load cache from saved session
         (setq cg--caller-cache (map-into cg-persist-caller-cache 'hash-table)
               cg-persist-caller-cache nil)
-      (setq cg--caller-cache (make-hash-table :test #'equal)))))
+      (setq cg--caller-cache (make-hash-table :test #'equal))))
+
+  (unless (eq major-mode 'call-graph-mode) ; set mode of data
+    (setf (call-graph--data-mode cg--default-instance) major-mode)))
 
 (defun cg--dispatch-interface()
   "Dispatch interface for different language."
@@ -358,7 +364,7 @@ With prefix argument, discard cached data and re-generate reference data."
 ;; Call-Graph Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg/visit-file-at-point ()
+(defun cg-visit-file-at-point ()
   "Visit occurrence on the current line."
   (when-let ((call-graph cg--default-instance)
              (callee (get-text-property (point) 'callee-name))
@@ -369,23 +375,23 @@ With prefix argument, discard cached data and re-generate reference data."
     (setq cg--window-configuration (current-window-configuration)
           cg--selected-window (frame-selected-window)) ; update window configuration
     (when (> (seq-length locations) 1)
-      (message "Multiple locations for this function, select with `cg/select-caller-location'"))))
+      (message "Multiple locations for this function, select with `cg-select-caller-location'"))))
 
-(defun cg/goto-file-at-point ()
+(defun cg-goto-file-at-point ()
   "Go to the occurrence on the current line."
   (interactive)
   (save-mark-and-excursion
     (when (get-char-property (point) 'button)
       (forward-char 4))
-    (cg/visit-file-at-point)))
+    (cg-visit-file-at-point)))
 
-(defun cg/display-file-at-point ()
+(defun cg-display-file-at-point ()
   "Display in another window the occurrence the current line describes."
   (interactive)
   (save-selected-window
-    (cg/goto-file-at-point)))
+    (cg-goto-file-at-point)))
 
-(defun cg/at-point ()
+(defun cg-at-point ()
   "Within buffer <*call-graph*>, generate new `call-graph' for symbol at point."
   (interactive)
   (save-mark-and-excursion
@@ -394,7 +400,7 @@ With prefix argument, discard cached data and re-generate reference data."
     (when-let ((caller (get-text-property (point) 'caller-name)))
       (call-graph caller))))
 
-(defun cg/select-caller-location ()
+(defun cg-select-caller-location ()
   "Select caller location as default location for function at point."
   (interactive)
   (save-mark-and-excursion
@@ -415,7 +421,7 @@ With prefix argument, discard cached data and re-generate reference data."
                           (setf (map-elt (call-graph--locations call-graph) func-caller-key) locations)
                           (cg--visit-function func-location))))))
 
-(defun cg/remove-single-caller ()
+(defun cg-remove-single-caller ()
   "Within buffer <*call-graph*>, remove single caller at point."
   (when (get-char-property (point) 'button)
     (forward-char 4))
@@ -430,13 +436,13 @@ With prefix argument, discard cached data and re-generate reference data."
                   (setf (map-elt cg--caller-cache callee) deep-copy-of-callers))))
     (unwind-protect
         (progn
-          (when cg-display-file (remove-hook 'widget-move-hook 'cg/display-file-at-point)) ; disable display-file temporarly
+          (when cg-display-file (remove-hook 'widget-move-hook 'cg-display-file-at-point)) ; disable display-file temporarly
           (tree-mode-delete-match (symbol-name caller)))
-      (when cg-display-file (add-hook 'widget-move-hook 'cg/display-file-at-point))) ; restore display-file
+      (when cg-display-file (add-hook 'widget-move-hook 'cg-display-file-at-point))) ; restore display-file
     (setf (map-elt cg--caller-cache callee)
           (remove caller filters))))
 
-(defun cg/remove-region-callers ()
+(defun cg-remove-region-callers ()
   "Within buffer <*call-graph*>, remove callers within active region."
   (when (region-active-p)
     (deactivate-mark)
@@ -449,17 +455,17 @@ With prefix argument, discard cached data and re-generate reference data."
       (while (<= line-iterator (max rbeg-line rend-line))
         (goto-char (point-min)) (forward-line (1- (min rbeg-line rend-line)))
         (beginning-of-line) (while (not (get-char-property (point) 'button)) (forward-char))
-        (cg/remove-single-caller)
+        (cg-remove-single-caller)
         (setq line-iterator (1+ line-iterator))))))
 
-(defun cg/remove-caller ()
+(defun cg-remove-caller ()
   "Within buffer <*call-graph*>, remove caller."
   (interactive)
   (if (region-active-p)
-      (cg/remove-region-callers)
-    (cg/remove-single-caller)))
+      (cg-remove-region-callers)
+    (cg-remove-single-caller)))
 
-(defun cg/reset-caller-cache ()
+(defun cg-reset-caller-cache ()
   "Within buffer <*call-graph*>, reset caller cache for symbol at point.
 With prefix argument, discard whole caller cache."
   (interactive)
@@ -474,7 +480,7 @@ With prefix argument, discard whole caller cache."
         (setf (map-elt cg--caller-cache caller) nil)
         (message (format "Reset caller cache for %s done" caller))))))
 
-(defun cg/quit ()
+(defun cg-quit ()
   "Quit `call-graph'."
   (interactive)
   (when (eq major-mode 'call-graph-mode)
@@ -485,38 +491,38 @@ With prefix argument, discard whole caller cache."
       (set-window-configuration configuration)
       (select-window selected-window))))
 
-(defun cg/toggle-show-func-args ()
+(defun cg-toggle-show-func-args ()
   "Toggle show func-args for current `call-graph'."
   (interactive)
   (setq cg-display-func-args (not cg-display-func-args)
         cg--default-instance nil)
   (goto-char (point-min))
-  (cg/at-point))
+  (cg-at-point))
 
-(defun cg/toggle-invalid-reference ()
+(defun cg-toggle-invalid-reference ()
   "Toggle ignore-invalid-reference for current `call-graph'."
   (interactive)
   (setq cg-ignore-invalid-reference (not cg-ignore-invalid-reference)
         cg--default-instance nil)
   (goto-char (point-min))
-  (cg/at-point))
+  (cg-at-point))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg/widget-expand-all ()
+(defun cg-widget-expand-all ()
   "Iterate all widgets in buffer and expand em."
   (interactive)
   (tree-mode-expand-level 0))
 
-(defun cg/widget-collapse-all ()
+(defun cg-widget-collapse-all ()
   "Iterate all widgets in buffer and close em."
   (interactive)
   (goto-char (point-min))
   (tree-mode-expand-level 1))
 
-(defun cg/expand (&optional level)
+(defun cg-expand (&optional level)
   "Expand `call-graph' by LEVEL."
   (interactive "p")
   (when-let ((call-graph cg--default-instance)
@@ -524,7 +530,7 @@ With prefix argument, discard whole caller cache."
              (func (cg--widget-root)))
     (cg--create call-graph func depth)))
 
-(defun cg/collapse (&optional level)
+(defun cg-collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
   (interactive "p")
   (let ((level (- (cg--widget-depth) level)))
@@ -541,21 +547,21 @@ With prefix argument, discard whole caller cache."
 
 (defvar call-graph-mode-map
   (let ((map (make-keymap)))
-    (define-key map (kbd "e") 'cg/widget-expand-all)
-    (define-key map (kbd "c") 'cg/widget-collapse-all)
+    (define-key map (kbd "e") 'cg-widget-expand-all)
+    (define-key map (kbd "c") 'cg-widget-collapse-all)
     (define-key map (kbd "p") 'widget-backward)
     (define-key map (kbd "n") 'widget-forward)
-    (define-key map (kbd "q") 'cg/quit)
-    (define-key map (kbd "+") 'cg/expand)
-    (define-key map (kbd "_") 'cg/collapse)
-    (define-key map (kbd "o") 'cg/goto-file-at-point)
-    (define-key map (kbd "g") 'cg/at-point)
-    (define-key map (kbd "d") 'cg/remove-caller)
-    (define-key map (kbd "l") 'cg/select-caller-location)
-    (define-key map (kbd "r") 'cg/reset-caller-cache)
-    (define-key map (kbd "t") 'cg/toggle-show-func-args)
-    (define-key map (kbd "f") 'cg/toggle-invalid-reference)
-    (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
+    (define-key map (kbd "q") 'cg-quit)
+    (define-key map (kbd "+") 'cg-expand)
+    (define-key map (kbd "_") 'cg-collapse)
+    (define-key map (kbd "o") 'cg-goto-file-at-point)
+    (define-key map (kbd "g") 'cg-at-point)
+    (define-key map (kbd "d") 'cg-remove-caller)
+    (define-key map (kbd "l") 'cg-select-caller-location)
+    (define-key map (kbd "r") 'cg-reset-caller-cache)
+    (define-key map (kbd "t") 'cg-toggle-show-func-args)
+    (define-key map (kbd "f") 'cg-toggle-invalid-reference)
+    (define-key map (kbd "<RET>") 'cg-goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
 
@@ -573,7 +579,7 @@ With prefix argument, discard whole caller cache."
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
   (when cg-display-file
-    (add-hook 'widget-move-hook 'cg/display-file-at-point))
+    (add-hook 'widget-move-hook 'cg-display-file-at-point))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
