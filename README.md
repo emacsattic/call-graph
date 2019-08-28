@@ -105,7 +105,7 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
 Save caller-relations in .session.
 
 ```
-    (add-hook 'kill-emacs-hook #'cg/prepare-persistent-data)
+    (add-hook 'kill-emacs-hook #'cg-prepare-persistent-data)
 
     (setq desktop-globals-to-save
         (append '((cg-persist-caller-cache . 1000)
