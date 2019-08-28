@@ -158,7 +158,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun cg--save-caller-cache ()
-  "Save caller cache by saving cg-persist-caller-cache in .session file."
+  "Save caller cache by saving cg-persist-caller-cache in .emacs.desktop file."
   (when cg--caller-cache
     (setq cg-persist-caller-cache
           (map-into cg--caller-cache 'list))))
