@@ -64,8 +64,9 @@ e.g: class.method => method."
              (short-func (intern (car (last (split-string full-func-str "\\."))))))
     short-func))
 
-(defun cg--python-find-caller (reference func)
-  "Given a REFERENCE of FUNC, return the caller as (caller . location).
+(defun cg--python-find-caller (reference func &optional data-mode)
+  "Given a REFERENCE of FUNC for mode DATA-MODE.
+Return the caller as (caller . location).
 When FUNC with args, match number of args as well."
   (when-let ((is-valid-func func)
              (tmp-split (split-string reference ":"))
