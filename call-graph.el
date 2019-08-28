@@ -157,8 +157,8 @@
 ;; Persitence
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cg-prepare-persistent-data ()
-  "Prepare data for persistence."
+(defun cg--save-caller-cache ()
+  "Save caller cache by saving cg-persist-caller-cache in .session file."
   (when cg--caller-cache
     (setq cg-persist-caller-cache
           (map-into cg--caller-cache 'list))))
@@ -580,7 +580,7 @@ With prefix argument, discard whole caller cache."
   (push (cons 'keymap t) text-property-default-nonsticky)
   (when cg-display-file
     (add-hook 'widget-move-hook 'cg-display-file-at-point))
-  (add-hook 'kill-emacs-hook 'cg-prepare-persistent-data)  
+  (add-hook 'kill-emacs-hook 'cg--save-caller-cache)  
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
