@@ -580,7 +580,7 @@ With prefix argument, discard whole caller cache."
   (push (cons 'keymap t) text-property-default-nonsticky)
   (when cg-display-file
     (add-hook 'widget-move-hook 'cg-display-file-at-point))
-  (add-hook 'kill-emacs-hook 'cg--save-caller-cache)  
+  (cg--save-caller-cache)  
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
