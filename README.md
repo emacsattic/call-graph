@@ -102,7 +102,7 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
     (add-to-list 'cg-search-filters filter))
 ```
 
-Save caller-relations in .session.
+Save caller-relations in .emacs.desktop
 
 ```
     (setq desktop-globals-to-save
