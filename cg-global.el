@@ -62,8 +62,9 @@ e.g: class::method(arg1, arg2) => method."
              (short-func (intern (car (last (split-string short-func-with-namespace "::"))))))
     short-func))
 
-(defun cg--global-find-caller (reference func)
-  "Given a REFERENCE of FUNC, return the caller as (caller . location).
+(defun cg--global-find-caller (reference func &optional data-mode)
+  "Given a REFERENCE of FUNC for mode DATA-MODE.
+Return the caller as (caller . location).
 When FUNC with args, match number of args as well."
   (when-let ((tmp-split (split-string reference ":"))
              (file-name (car tmp-split))
@@ -78,8 +79,7 @@ When FUNC with args, match number of args as well."
           (nb-of-func-args (cg--number-of-args (symbol-name func)))
           (nb-of-reference-args nil)
           (short-fun-str (symbol-name short-func))
-          (is-valid-reference t)
-          (origin-major-mode major-mode))
+          (is-valid-reference t))
       (with-temp-buffer
         (cg--show-function-args)
         (insert-file-contents-literally file-name)
@@ -88,9 +88,9 @@ When FUNC with args, match number of args as well."
           (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
         (goto-char (point-min))
         (forward-line (1- line-nb))
-        (cg--setq-local-mode-hook-nil origin-major-mode)
+        (cg--setq-local-mode-hook-nil data-mode)
         (setq imenu--index-alist nil)
-        (funcall origin-major-mode)
+        (funcall data-mode)
         (setq-local which-func-cleanup-function nil)
         (which-function-mode t)
         ;; make sure reference contains a function call
@@ -241,6 +241,7 @@ e.g: class::method(arg1, arg2) => class::method."
       (message "Failed to get argument."))))
 
 (defun cg--setq-local-mode-hook-nil (mode)
+  "Clear mode hooks for MODE."
   (cond ((eql mode 'c++-mode)
          (setq-local c++-mode-hook nil))
         ((eql mode 'c-mode)
