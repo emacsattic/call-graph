@@ -54,21 +54,21 @@ You could bind it to <kbd>C-c g</kbd>.
 # Keys
 
 ```lisp
-    (define-key map (kbd "e") 'cg/widget-expand-all)
-    (define-key map (kbd "c") 'cg/widget-collapse-all)
+    (define-key map (kbd "e") 'cg-widget-expand-all)
+    (define-key map (kbd "c") 'cg-widget-collapse-all)
     (define-key map (kbd "p") 'widget-backward)
     (define-key map (kbd "n") 'widget-forward)
-    (define-key map (kbd "q") 'cg/quit)
-    (define-key map (kbd "+") 'cg/expand)
-    (define-key map (kbd "_") 'cg/collapse)
-    (define-key map (kbd "o") 'cg/goto-file-at-point)
-    (define-key map (kbd "g") 'cg/at-point)
-    (define-key map (kbd "d") 'cg/remove-caller)
-    (define-key map (kbd "l") 'cg/select-caller-location)
-    (define-key map (kbd "r") 'cg/reset-caller-cache)
-    (define-key map (kbd "t") 'cg/toggle-show-func-args)
-    (define-key map (kbd "f") 'cg/toggle-invalid-reference)
-    (define-key map (kbd "<RET>") 'cg/goto-file-at-point)
+    (define-key map (kbd "q") 'cg-quit)
+    (define-key map (kbd "+") 'cg-expand)
+    (define-key map (kbd "_") 'cg-collapse)
+    (define-key map (kbd "o") 'cg-goto-file-at-point)
+    (define-key map (kbd "g") 'cg-at-point)
+    (define-key map (kbd "d") 'cg-remove-caller)
+    (define-key map (kbd "l") 'cg-select-caller-location)
+    (define-key map (kbd "r") 'cg-reset-caller-cache)
+    (define-key map (kbd "t") 'cg-toggle-show-func-args)
+    (define-key map (kbd "f") 'cg-toggle-invalid-reference)
+    (define-key map (kbd "<RET>") 'cg-goto-file-at-point)
 ```
 
 # Customization
