@@ -112,6 +112,9 @@
 (defvar cg--selected-window nil
   "The currently selected window.")
 
+(defvar cg--created-buffers ()
+  "List of buffers created by `call-graph'.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data Structure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,7 +193,8 @@
              (is-valid-file (file-exists-p file-name))
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
-    (with-no-warnings (goto-line line-nb))))
+    (with-no-warnings (goto-line line-nb))
+    (add-to-list 'cg--created-buffers (window-buffer))))
 
 (defun cg--widget-root ()
   "Return current tree root."
@@ -489,7 +493,9 @@ With prefix argument, discard whole caller cache."
           (selected-window cg--selected-window))
       (kill-this-buffer)
       (set-window-configuration configuration)
-      (select-window selected-window))))
+      (select-window selected-window)
+      (mapc 'kill-buffer-if-not-modified cg--created-buffers)
+      (setq cg--created-buffers ()))))
 
 (defun cg-toggle-show-func-args ()
   "Toggle show func-args for current `call-graph'."
