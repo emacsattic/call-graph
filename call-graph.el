@@ -1,6 +1,6 @@
 ;;; call-graph.el --- Library to generate call graph for c/c++ functions  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018-2019 by Huming Chen
+;; Copyright (C) 2018-2020 by Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
