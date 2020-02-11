@@ -1,6 +1,6 @@
 ;;; cg-python.el --- call-graph python support. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Huming Chen
+;; Copyright (C) 2019-2020 Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
