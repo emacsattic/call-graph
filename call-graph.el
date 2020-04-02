@@ -115,6 +115,9 @@
 (defvar cg--created-buffers ()
   "List of buffers created by `call-graph'.")
 
+(defvar cg--previous-buffers ()
+  "List of buffers before opening `call-graph'.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Data Structure
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -194,7 +197,10 @@
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
     (with-no-warnings (goto-line line-nb))
-    (add-to-list 'cg--created-buffers (window-buffer))))
+    (unless (member
+             (buffer-name (window-buffer))
+             (mapcar (function buffer-name) cg--previous-buffers))
+      (add-to-list 'cg--created-buffers (window-buffer)))))
 
 (defun cg--widget-root ()
   "Return current tree root."
@@ -356,6 +362,7 @@ With prefix argument, discard cached data and re-generate reference data."
           (window-configuration (current-window-configuration))
           (selected-window (frame-selected-window)))
 
+      (setq cg--previous-buffers (buffer-list))
       (cg--dispatch-interface)
       (cg--handle-root-function call-graph func)
 
