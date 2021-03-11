@@ -1,6 +1,6 @@
 ;;; cg-test.el --- test call-graph functions. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2020 Huming Chen
+;; Copyright (C) 2018-2021 Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
