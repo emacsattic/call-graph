@@ -1,6 +1,6 @@
 ;;; cg-global.el --- call-graph C++ support. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019-2020 Huming Chen
+;; Copyright (C) 2019-2021 Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; Maintainer: Huming Chen <chenhuming@gmail.com>
