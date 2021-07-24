@@ -123,14 +123,14 @@ When FUNC with args, match number of args as well."
                  (cg--get-path-to-global)
                  (shell-quote-argument (symbol-name func))))
         (filter-separator " | ")
-        command-filter command-out-put)
+        command-filter command-output)
     (when (and (> (length cg-search-filters) 0)
                (setq command-filter
                      (mapconcat #'identity (delq nil cg-search-filters) filter-separator))
                (not (string= command-filter filter-separator)))
       (setq command (concat command filter-separator command-filter)))
-    (when (setq command-out-put (shell-command-to-string command))
-      (split-string command-out-put "\n" t))))
+    (when (setq command-output (shell-command-to-string command))
+      (split-string command-output "\n" t))))
 
 (defun cg--global-handle-root-function (call-graph func)
   "Save location of root function FUNC in CALL-GRAPH."
