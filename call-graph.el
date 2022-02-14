@@ -190,7 +190,7 @@
 
 (defun cg--blink-at-point ()
   "Blink at point with beacon mode."
-  (beacon-mode)
+  (beacon-mode 1)
   (beacon-blink))
 
 (defun cg--visit-function (func-location)
