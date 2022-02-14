@@ -188,11 +188,6 @@
   (let ((buffer-name "*call-graph*"))
     (get-buffer-create buffer-name)))
 
-(defun cg--blink-at-point ()
-  "Blink at point with beacon mode."
-  (beacon-mode 1)
-  (beacon-blink))
-
 (defun cg--visit-function (func-location)
   "Visit function location FUNC-LOCATION."
   (when-let ((temp-split (split-string func-location ":"))
@@ -203,7 +198,7 @@
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
     (with-no-warnings (goto-line line-nb)
-                      (cg--blink-at-point))
+                      (beacon-blink))
     (unless (member
              (buffer-name (window-buffer))
              (mapcar (function buffer-name) cg--previous-buffers))
