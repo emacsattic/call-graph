@@ -1,14 +1,13 @@
-;;; call-graph.el --- Library to generate call graph for c/c++ functions  -*- lexical-binding: t; -*-
+;;; call-graph.el --- Generate call graph for c/c++ functions  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018-2021 by Huming Chen
+;; Copyright (C) 2018-2022 by Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
-;; Maintainer: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
-;; Package-Requires: ((emacs "25.1") (cl-lib "0.6.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0") (anaconda-mode "0.1.13") (beacon "1.3.3"))
+;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0") (beacon "1.3.3"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -41,15 +40,19 @@
 
 ;; "C-c g" => (call-graph) => buffer <*call-graph*> will be generated
 
+;;; Change Log:
+;;
+;; 0.1.1 Remove unusable python support
+;;       Remove unusable emacs lisp support
+;;       Refactor code
+
 ;;; Code:
 
+(require 'beacon)
 (require 'cg-global)
-(require 'cg-lib)
-(require 'cg-python)
 (require 'hierarchy)
 (require 'ivy)
 (require 'tree-mode)
-(require 'beacon)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Customizable
@@ -65,11 +68,6 @@
   :type 'integer
   :group 'call-graph)
 
-(defcustom cg-search-filters '("grep -E \"\\.(cpp|cc|c):\"")
-  "The filters used by `call-graph' when searching caller."
-  :type 'list
-  :group 'call-graph)
-
 (defcustom cg-display-file t
   "Non-nil means display file in another window while moving from one field to another in `call-graph'."
   :type 'boolean
@@ -79,16 +77,6 @@
   "If non-nil the directory to search global executables."
   :type '(choice (const :tag "Unset" nil) directory)
   :risky t
-  :group 'call-graph)
-
-(defcustom cg-display-func-args nil
-  "Non-nil means display function together with its args in `call-graph'."
-  :type 'boolean
-  :group 'call-graph)
-
-(defcustom cg-ignore-invalid-reference nil
-  "Non-nil means reference with function name but no `(...)' will be ignored."
-  :type 'boolean
   :group 'call-graph)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -138,7 +126,7 @@
 (defun cg--add-callers (call-graph func callers)
   "In CALL-GRAPH, given FUNC, add CALLERS."
   (when (and call-graph func callers)
-    (let* ((short-func (cg--extract-method-name func))) ; method only
+    (let* ((short-func (cg--global-extract-method-name func))) ; method only
       (unless (map-elt (call-graph--callers call-graph) short-func)
         (seq-doseq (caller callers)
           (let* ((full-caller (car caller)) ; class::method
@@ -180,7 +168,7 @@
     (let ((locations (call-graph--locations call-graph))
           (func-caller-key
            (if (eq 'root-function func) 'root-function ; special treatment for root-function
-             (intern (concat (symbol-name (cg--extract-method-name func)) " <- " (symbol-name caller))))))
+             (intern (concat (symbol-name (cg--global-extract-method-name func)) " <- " (symbol-name caller))))))
       (map-elt locations func-caller-key))))
 
 (defun cg--get-buffer ()
@@ -246,16 +234,16 @@
 (defun cg--search-callers (call-graph func depth)
   "In CALL-GRAPH, given FUNC, search callers deep to level DEPTH."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
-             (short-func (cg--extract-method-name func))
+             (short-func (cg--global-extract-method-name func))
              (data-mode (call-graph--data-mode call-graph)))
     (let ((caller-list (list))
           (callers (map-elt (call-graph--callers call-graph) short-func (list))))
 
       ;; callers not found.
       (unless callers
-        (seq-doseq (reference (cg--find-references short-func))
+        (seq-doseq (reference (cg--global-find-references short-func))
           (when-let ((caller-info
-                      (and reference (cg--find-caller reference func data-mode))))
+                      (and reference (cg--global-find-caller reference func data-mode))))
             (message (format "Search returns: %s" (symbol-name (car caller-info))))
             (push caller-info caller-list)))
         (cg--add-callers call-graph func caller-list)
@@ -270,7 +258,7 @@
 CALCULATE-DEPTH is used to calculate actual depth."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
              (hierarchy cg--default-hierarchy)
-             (short-func (cg--extract-method-name func))
+             (short-func (cg--global-extract-method-name func))
              (callers
               (or (map-elt cg--caller-cache func (list)) ; load callers from cache
                   (map-elt (call-graph--callers call-graph) short-func (list)))))
@@ -330,28 +318,6 @@ CALCULATE-DEPTH is used to calculate actual depth."
   (unless (eq major-mode 'call-graph-mode) ; set mode of data
     (setf (call-graph--data-mode cg--default-instance) major-mode)))
 
-(defun cg--dispatch-interface()
-  "Dispatch interface for different language."
-  (cond
-   ((member major-mode '(c-mode c++-mode))
-    (progn
-      (defalias 'cg--extract-method-name 'cg--global-extract-method-name)
-      (defalias 'cg--find-caller 'cg--global-find-caller)
-      (defalias 'cg--find-references 'cg--global-find-references)
-      (defalias 'cg--handle-root-function 'cg--global-handle-root-function)))
-   ((equal major-mode 'python-mode)
-    (progn
-      (defalias 'cg--extract-method-name 'cg--python-extract-method-name)
-      (defalias 'cg--find-caller 'cg--python-find-caller)
-      (defalias 'cg--find-references 'cg--python-find-references)
-      (defalias 'cg--handle-root-function 'cg--python-handle-root-function)))
-   ((equal major-mode 'emacs-lisp-mode)
-    (progn
-      (defalias 'cg--extract-method-name 'cg--global-extract-method-name)
-      (defalias 'cg--find-caller 'cg--global-find-caller)
-      (defalias 'cg--find-references 'cg--global-find-references)
-      (defalias 'cg--handle-root-function 'cg--global-handle-root-function)))))
-
 ;;;###autoload
 (defun call-graph (&optional func)
   "Generate `call-graph' for FUNC / func-at-point / func-in-active-rigion.
@@ -365,8 +331,7 @@ With prefix argument, discard cached data and re-generate reference data."
           (selected-window (frame-selected-window)))
 
       (setq cg--previous-buffers (buffer-list))
-      (cg--dispatch-interface)
-      (cg--handle-root-function call-graph func)
+      (cg--global-handle-root-function call-graph func)
 
       (save-mark-and-excursion
         (cg--create call-graph func cg-initial-max-depth)
@@ -423,7 +388,7 @@ With prefix argument, discard cached data and re-generate reference data."
                (callee (get-text-property (point) 'callee-name))
                (caller (get-text-property (point) 'caller-name))
                (func-caller-key
-                (intern (concat (symbol-name (cg--extract-method-name callee)) " <- " (symbol-name caller))))
+                (intern (concat (symbol-name (cg--global-extract-method-name callee)) " <- " (symbol-name caller))))
                (locations (cg--get-func-caller-location call-graph callee caller))
                (has-many (> (seq-length locations) 1)))
       (ivy-read "Caller Locations:" locations
@@ -441,7 +406,7 @@ With prefix argument, discard cached data and re-generate reference data."
   (when-let ((call-graph cg--default-instance)
              (callee (get-text-property (point) 'callee-name))
              (caller (get-text-property (point) 'caller-name))
-             (short-func (cg--extract-method-name callee))
+             (short-func (cg--global-extract-method-name callee))
              (callers (map-elt (call-graph--callers call-graph) short-func (list)))
              (deep-copy-of-callers (seq-map #'identity callers))
              (filters
@@ -602,7 +567,14 @@ With prefix argument, discard whole caller cache."
 ;; Tests
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;; @see cg-test.el
+(cl-assert (not (cg--number-of-args "func")))
+(cl-assert (not (cg--number-of-args "class::func")))
+(cl-assert (= (cg--number-of-args "func(template<p1,p2>(a),[a,b](a,b){a,b,c;},(a,b))") 3))
+(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "method"))))
+(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "class::method"))))
+(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "class::method(arg1,arg2)"))))
+(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "class::method(class::variable1,class::variable2)"))))
+(cl-assert (equal "class::method" (cg--extract-namespace-and-method "class::method(class::variable1,class::variable2)")))
 
 
 (provide 'call-graph)
