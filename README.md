@@ -1,4 +1,4 @@
-# call-graph - Library to generate call graph for c/c++ functions
+# call-graph - Generate call graph for c/c++ functions
 
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](COPYING.md)
 [![MELPA](https://melpa.org/packages/call-graph-badge.svg)](https://melpa.org/#/call-graph)
