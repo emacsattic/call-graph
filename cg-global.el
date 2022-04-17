@@ -30,7 +30,6 @@
 (require 'subr-x)
 (require 'which-func)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Customizable
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,6 +47,12 @@
 (defcustom cg-search-filters '("grep -E \"\\.(cpp|cc|c):\"")
   "The filters used by `call-graph' when searching caller."
   :type 'list
+  :group 'call-graph)
+
+(defcustom cg-path-to-global nil
+  "Directory to search Gnu global executables."
+  :type '(choice (const :tag "Unset" nil) directory)
+  :risky t
   :group 'call-graph)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
