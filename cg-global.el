@@ -1,14 +1,6 @@
-;;; cg-global.el --- call-graph C++ support. -*- lexical-binding: t -*-
+;;; cg-global.el --- C++ support -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019-2021 Huming Chen
-
-;; Author: Huming Chen <chenhuming@gmail.com>
-;; Maintainer: Huming Chen <chenhuming@gmail.com>
-;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.1.0
-;; Keywords: programming, convenience
-;; Created: 2018-01-07
-;; Package-Requires: ((emacs "25.1"))
+;; Copyright (C) 2019-2022 Huming Chen
 
 ;; This file is not part of GNU Emacs.
 
@@ -32,7 +24,31 @@
 ;;; Code:
 
 (require 'cc-mode)
-(require 'cg-lib)
+(require 'cl-lib)
+(require 'map)
+(require 'seq)
+(require 'subr-x)
+(require 'which-func)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Customizable
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defcustom cg-ignore-invalid-reference nil
+  "Non-nil means reference with function name but no `(...)' will be ignored."
+  :type 'boolean
+  :group 'call-graph)
+
+(defcustom cg-display-func-args nil
+  "Non-nil means display function together with its args in `call-graph'."
+  :type 'boolean
+  :group 'call-graph)
+
+(defcustom cg-search-filters '("grep -E \"\\.(cpp|cc|c):\"")
+  "The filters used by `call-graph' when searching caller."
+  :type 'list
+  :group 'call-graph)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Definition
@@ -77,7 +93,7 @@ When FUNC with args, match number of args as well."
              (is-valid-file (file-exists-p file-name))
              (is-valid-nb (integerp line-nb))
              func
-             (short-func (cg--extract-method-name func)))
+             (short-func (cg--global-extract-method-name func)))
     (let ((location (concat file-name ":" line-nb-str))
           (caller nil)
           (nb-of-func-args (cg--number-of-args (symbol-name func)))
@@ -147,6 +163,36 @@ When FUNC with args, match number of args as well."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; steal from ag/dwim-at-point
+(defun cg--dwim-at-point ()
+  "If there's an active selection, return that.
+Otherwise, get the symbol at point, as a string."
+  (cond ((use-region-p)
+         (buffer-substring-no-properties (region-beginning) (region-end)))
+        ((symbol-at-point)
+         (substring-no-properties
+          (symbol-name (symbol-at-point))))))
+
+;;; improved version, based on ag/read-from-minibuffer
+(defun cg--read-from-minibuffer (prompt)
+  "Read a value from the minibuffer with PROMPT.
+If there's a string at point, use it instead of prompt."
+  (let* ((suggested (cg--dwim-at-point))
+         (final-prompt
+          (if suggested (format "%s (default %s): " prompt suggested)
+            (format "%s: " prompt))))
+    (if (or current-prefix-arg (string= "" suggested) (not suggested))
+        (read-from-minibuffer final-prompt nil nil nil nil suggested)
+      suggested)))
+
+(defun cg--trim-string (string)
+  "Remove white spaces in beginning and ending of STRING.
+White space here is any of: space, tab, Emacs newline (line feed, ASCII 10)."
+  (replace-regexp-in-string
+   "\\`[ \t\n]*" ""
+   (replace-regexp-in-string
+    "[ \t\n]*\\'" "" string)))
 
 (defun cg--extract-namespace-and-method (full-func)
   "Given FULL-FUNC, return a namespace and method.
@@ -266,12 +312,6 @@ e.g: class::method(arg1, arg2) => class::method."
          (setq-local ruby-mode-hook nil))
         ((eql mode 'java-mode)
          (setq-local java-mode-hook nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Tests
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;; @see cg-test.el
 
 
 (provide 'cg-global)
