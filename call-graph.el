@@ -68,15 +68,9 @@
   :type 'integer
   :group 'call-graph)
 
-(defcustom cg-display-file t
-  "Non-nil means display file in another window while moving from one field to another in `call-graph'."
+(defcustom cg-display-file-other-window t
+  "Display file in another window."
   :type 'boolean
-  :group 'call-graph)
-
-(defcustom cg-path-to-global nil
-  "If non-nil the directory to search global executables."
-  :type '(choice (const :tag "Unset" nil) directory)
-  :risky t
   :group 'call-graph)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -126,7 +120,7 @@
 (defun cg--add-callers (call-graph func callers)
   "In CALL-GRAPH, given FUNC, add CALLERS."
   (when (and call-graph func callers)
-    (let* ((short-func (cg--global-extract-method-name func))) ; method only
+    (let ((short-func (cg--global-extract-method-name func))) ; method only
       (unless (map-elt (call-graph--callers call-graph) short-func)
         (seq-doseq (caller callers)
           (let* ((full-caller (car caller)) ; class::method
@@ -143,10 +137,9 @@
 
 (defun cg--is-valid (call-graph)
   "Check if CALL-GRAPH is valid."
-  (when (and call-graph
-             (not (zerop (map-length (call-graph--callers call-graph))))
-             (not (zerop (map-length (call-graph--locations call-graph)))))
-    t))
+  (and call-graph
+       (not (zerop (map-length (call-graph--callers call-graph))))
+       (not (zerop (map-length (call-graph--locations call-graph))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Persitence
@@ -414,9 +407,9 @@ With prefix argument, discard cached data and re-generate reference data."
                   (setf (map-elt cg--caller-cache callee) deep-copy-of-callers))))
     (unwind-protect
         (progn
-          (when cg-display-file (remove-hook 'widget-move-hook 'cg-display-file-at-point)) ; disable display-file temporarly
+          (when cg-display-file-other-window (remove-hook 'widget-move-hook 'cg-display-file-at-point)) ; disable display-file temporarly
           (tree-mode-delete-match (symbol-name caller)))
-      (when cg-display-file (add-hook 'widget-move-hook 'cg-display-file-at-point))) ; restore display-file
+      (when cg-display-file-other-window (add-hook 'widget-move-hook 'cg-display-file-at-point))) ; restore display-file
     (setf (map-elt cg--caller-cache callee)
           (remove caller filters))))
 
@@ -558,7 +551,7 @@ With prefix argument, discard whole caller cache."
   (hack-dir-local-variables-non-file-buffer)
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
-  (when cg-display-file
+  (when cg-display-file-other-window
     (add-hook 'widget-move-hook 'cg-display-file-at-point))
   (add-hook 'kill-emacs-hook 'cg--save-caller-cache)
   (run-mode-hooks))
