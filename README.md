@@ -27,18 +27,11 @@ Clone the repo, then in your Emacs init file:
 
 Or install from [melpa](https://melpa.org/#/call-graph).
 
-## Dependencies
+## External dependency
 
 * `GNU Global`
-* `hierarchy`
-* `tree-mode`
-* `ivy`
-* `anaconda-mode`
 
-For C++, `call-graph` will recursively call `Global` to find caller of
-current function and eventually build up a `call-graph` tree.
-
-For python, `call-graph` rely on `anaconda-mode` to provide caller of
+`call-graph` will recursively call `Global` to find caller of
 current function and eventually build up a `call-graph` tree.
 
 # Usage
@@ -129,11 +122,10 @@ Lots more need to be improved.
 - [x] Support manually remove wrong callers.
 - [x] Support persistence of call-graph cache data.
 - [x] Toggle show function args in call-graph.
-- [x] Add basic python support.
 
 # Contributing
 Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 # License
 
-See [LICENSE](LICENSE). Copyright (c) 2018-2021 Huming Chen <chenhuming@gmail.com>
+See [LICENSE](LICENSE). Copyright (c) 2018-2022 Huming Chen <chenhuming@gmail.com>
