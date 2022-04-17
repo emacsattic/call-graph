@@ -182,7 +182,7 @@
                       (beacon-blink))
     (unless (member
              (buffer-name (window-buffer))
-             (mapcar (function buffer-name) cg--previous-buffers))
+             (mapcar #'buffer-name cg--previous-buffers))
       (add-to-list 'cg--created-buffers (window-buffer)))))
 
 (defun cg--widget-root ()
