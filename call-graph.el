@@ -324,7 +324,7 @@ With prefix argument, discard cached data and re-generate reference data."
           (selected-window (frame-selected-window)))
 
       (setq cg--previous-buffers (buffer-list))
-      (cg--global-handle-root-function call-graph func)
+      (cg--global-handle-root-function call-graph)
 
       (save-mark-and-excursion
         (cg--create call-graph func cg-initial-max-depth)
