@@ -157,8 +157,8 @@ When FUNC with args, match number of args as well."
     (when (setq command-output (shell-command-to-string command))
       (split-string command-output "\n" t))))
 
-(defun cg--global-handle-root-function (call-graph func)
-  "Save location of root function FUNC in CALL-GRAPH."
+(defun cg--global-handle-root-function (call-graph)
+  "Save location of root function in CALL-GRAPH."
   (when-let ((file-name (buffer-file-name))
              (line-nb (line-number-at-pos))
              (location (concat file-name ":" (number-to-string line-nb))))
