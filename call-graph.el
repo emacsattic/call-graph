@@ -26,7 +26,7 @@
 
 ;;; Commentary:
 
-;; Generate call graph for c/c++ functions.
+;; Library to generate call graph for c/c++ functions.
 
 ;;; Install:
 
@@ -78,7 +78,7 @@
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar cg-persist-caller-cache nil
+(defvar cg--caller-cache-alist nil
   "The alist form of `cg--caller-cache'.")
 
 (defvar cg--caller-cache nil
@@ -141,16 +141,6 @@
   (and call-graph
        (not (zerop (map-length (call-graph--callers call-graph))))
        (not (zerop (map-length (call-graph--locations call-graph))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Persitence
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun cg--save-caller-cache ()
-  "Save caller cache by saving cg-persist-caller-cache in .emacs.desktop file."
-  (when cg--caller-cache
-    (setq cg-persist-caller-cache
-          (map-into cg--caller-cache 'list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -220,6 +210,12 @@
          (seq-map (lambda (child) (cg--widget-depth-imp child (1+ depth)))
                   (widget-get tree :children))))
     (if is-valid-tree depth (1- depth))))
+
+(defun cg--save-caller-cache ()
+  "Save caller cache by saving cg--caller-cache-alist in .emacs.desktop file."
+  (when cg--caller-cache
+    (setq cg--caller-cache-alist
+          (map-into cg--caller-cache 'list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Functions
@@ -304,9 +300,9 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (setq cg--default-instance (cg-new))) ; clear cached reference
 
   (when (not cg--caller-cache)
-    (if cg-persist-caller-cache ; load cache from saved session
-        (setq cg--caller-cache (map-into cg-persist-caller-cache 'hash-table)
-              cg-persist-caller-cache nil)
+    (if cg--caller-cache-alist ; load cache from saved session
+        (setq cg--caller-cache (map-into cg--caller-cache-alist 'hash-table)
+              cg--caller-cache-alist nil)
       (setq cg--caller-cache (make-hash-table :test #'equal))))
 
   (unless (eq major-mode 'call-graph-mode) ; set mode of data
@@ -408,11 +404,14 @@ With prefix argument, discard cached data and re-generate reference data."
                   (setf (map-elt cg--caller-cache callee) deep-copy-of-callers))))
     (unwind-protect
         (progn
-          (when cg-display-file-other-window (remove-hook 'widget-move-hook 'cg-display-file-at-point)) ; disable display-file temporarly
+          (when cg-display-file-other-window
+            (remove-hook 'widget-move-hook 'cg-display-file-at-point)) ; disable display-file temporarly
           (tree-mode-delete-match (symbol-name caller)))
-      (when cg-display-file-other-window (add-hook 'widget-move-hook 'cg-display-file-at-point))) ; restore display-file
+      (when cg-display-file-other-window
+        (add-hook 'widget-move-hook 'cg-display-file-at-point))) ; restore display-file
     (setf (map-elt cg--caller-cache callee)
-          (remove caller filters))))
+          (remove caller filters))
+    (cg--save-caller-cache)))
 
 (defun cg-remove-region-callers ()
   "Within buffer <*call-graph*>, remove callers within active region."
@@ -441,16 +440,10 @@ With prefix argument, discard cached data and re-generate reference data."
   "Within buffer <*call-graph*>, reset caller cache for symbol at point.
 With prefix argument, discard whole caller cache."
   (interactive)
-  (if current-prefix-arg
-      (when (yes-or-no-p "Reset whole caller cache ?")
-        (setf cg--caller-cache nil)
-        (message "Reset whole caller cache done"))
-    (save-mark-and-excursion
-      (when (get-char-property (point) 'button)
-        (forward-char 4))
-      (when-let ((caller (get-text-property (point) 'caller-name)))
-        (setf (map-elt cg--caller-cache caller) nil)
-        (message (format "Reset caller cache for %s done" caller))))))
+  (when (yes-or-no-p "Reset whole caller cache ?")
+    (setf cg--caller-cache nil
+          cg--caller-cache-alist nil)
+    (message "Reset whole caller cache done")))
 
 (defun cg-quit ()
   "Quit `call-graph'."
@@ -473,7 +466,7 @@ With prefix argument, discard whole caller cache."
   (goto-char (point-min))
   (cg-at-point))
 
-(defun cg-toggle-invalid-reference ()
+(defun cg-toggle-ignore-invalid-reference ()
   "Toggle ignore-invalid-reference for current `call-graph'."
   (interactive)
   (setq cg-ignore-invalid-reference (not cg-ignore-invalid-reference)
@@ -533,8 +526,8 @@ With prefix argument, discard whole caller cache."
     (define-key map (kbd "d") 'cg-remove-caller)
     (define-key map (kbd "l") 'cg-select-caller-location)
     (define-key map (kbd "r") 'cg-reset-caller-cache)
-    (define-key map (kbd "t") 'cg-toggle-show-func-args)
-    (define-key map (kbd "f") 'cg-toggle-invalid-reference)
+    (define-key map (kbd "s") 'cg-toggle-show-func-args)
+    (define-key map (kbd "i") 'cg-toggle-ignore-invalid-reference)
     (define-key map (kbd "<RET>") 'cg-goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
@@ -554,9 +547,8 @@ With prefix argument, discard whole caller cache."
   (push (cons 'keymap t) text-property-default-nonsticky)
   (when cg-display-file-other-window
     (add-hook 'widget-move-hook 'cg-display-file-at-point))
-  (add-hook 'kill-emacs-hook 'cg--save-caller-cache)
   (setq desktop-globals-to-save
-        (add-to-list 'desktop-globals-to-save 'cg-persist-caller-cache))
+        (add-to-list 'desktop-globals-to-save 'cg--caller-cache-alist))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
