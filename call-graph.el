@@ -153,8 +153,11 @@
   (when (and call-graph func caller)
     (let ((locations (call-graph--locations call-graph))
           (func-caller-key
-           (if (eq 'root-function func) 'root-function ; special treatment for root-function
-             (intern (concat (symbol-name (cg--global-extract-method-name func)) " <- " (symbol-name caller))))))
+           (if (eq 'root-function func)
+               'root-function ; special treatment for root-function
+             (intern
+              (concat
+               (symbol-name (cg--global-extract-method-name func)) " <- " (symbol-name caller))))))
       (map-elt locations func-caller-key))))
 
 (defun cg--get-buffer ()
@@ -275,9 +278,6 @@ CALCULATE-DEPTH is used to calculate actual depth."
            (lambda (tree-item _)
              (let ((caller (symbol-name tree-item))
                    (parent (or (hierarchy-parent cg--default-hierarchy tree-item) 'root-function)))
-
-               ;; use propertize to avoid this error => Attempt to modify read-only object
-               ;; @see https://stackoverflow.com/questions/24565068/emacs-text-is-read-only
                (insert (propertize caller 'caller-name tree-item 'callee-name parent))))
            (cg--get-buffer)))
     (when switch-buffer
@@ -403,14 +403,15 @@ This works as a supplement, as `Global' sometimes fail to find caller."
                (callee (get-text-property (point) 'callee-name))
                (caller (get-text-property (point) 'caller-name))
                (func-caller-key
-                (intern (concat (symbol-name (cg--global-extract-method-name callee)) " <- " (symbol-name caller))))
+                (intern
+                 (concat (symbol-name (cg--global-extract-method-name callee)) " <- " (symbol-name caller))))
                (locations (cg--get-func-caller-location call-graph callee caller))
                (has-many (> (seq-length locations) 1)))
       (ivy-read "Caller Locations:" locations
                 :action (lambda (func-location)
                           (while (not (equal func-location (car locations)))
-                            (setq locations
-                                  (nconc (cdr locations) (cons (car locations) ())))) ; put selected location upfront
+                            (setq locations ; put selected location upfront
+                                  (nconc (cdr locations) (cons (car locations) ()))))
                           (setf (map-elt (call-graph--locations call-graph) func-caller-key) locations)
                           (cg--visit-function func-location))))))
 
