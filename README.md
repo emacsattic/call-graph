@@ -59,8 +59,8 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "d") 'cg-remove-caller)
     (define-key map (kbd "l") 'cg-select-caller-location)
     (define-key map (kbd "r") 'cg-reset-caller-cache)
-    (define-key map (kbd "t") 'cg-toggle-show-func-args)
-    (define-key map (kbd "f") 'cg-toggle-invalid-reference)
+    (define-key map (kbd "s") 'cg-toggle-show-func-args)
+    (define-key map (kbd "i") 'cg-toggle-ignore-invalid-reference)
     (define-key map (kbd "<RET>") 'cg-goto-file-at-point)
 ```
 
@@ -107,13 +107,12 @@ Lots more need to be improved.
 
 # Features
 
-- [x] Navigate to the caller file location.
-- [x] Support cache when searching for callers.
-- [x] Incrementally generate sub caller.
-- [x] Support manually remove wrong callers.
-- [x] Support persistence of call-graph cache data.
+- [x] Navigate to caller file location.
+- [x] Cache searching result.
+- [x] Incremental searching.
+- [x] Manual removing wrong callers.
 - [x] Toggle show function args in call-graph.
-- [x] Save caller-relations in .emacs.desktop.
+- [x] Save cache data to survive emacs restart.
 
 # Contributing
 Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
