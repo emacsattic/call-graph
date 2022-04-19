@@ -4,7 +4,7 @@
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.1.1
+;; Version: 0.1.2
 ;; Keywords: programming, convenience
 ;; Created: 2018-01-07
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0") (beacon "1.3.3"))
@@ -44,6 +44,9 @@
 ;;
 ;; 0.1.1 Remove unusable python support
 ;;       Remove unusable emacs lisp support
+;;       Refactor code
+;; 0.1.2 Automatically save cg--caller-cache into desktop file.
+;;       Add `cg-add-caller' to manually add callee <- caller.
 ;;       Refactor code
 
 ;;; Code:
@@ -126,8 +129,8 @@
         (seq-doseq (caller callers)
           (let* ((full-caller (car caller)) ; class::method
                  (location (cdr caller)) ; location
-                 (func-caller-key
-                  (intern (concat (symbol-name short-func) " <- " (symbol-name full-caller))))) ; "callee <- class::caller" as key
+                 (func-caller-key ; "callee <- class::caller" as key
+                  (intern (concat (symbol-name short-func) " <- " (symbol-name full-caller)))))
 
             ;; populate caller data
             (cl-pushnew full-caller (map-elt (call-graph--callers call-graph) short-func (list)))
@@ -328,6 +331,30 @@ With prefix argument, discard cached data and re-generate reference data."
         (setq cg--window-configuration window-configuration
               cg--selected-window selected-window)))))
 
+;;;###autoload
+(defun cg-add-caller (&optional func)
+  "Manually add FUNC at point into `Call-Graph' internal data structure.
+This works as a supplement, as `Global' sometimes fail to find caller."
+  (interactive (list (cg--dwim-at-point)))
+  (deactivate-mark)
+  (when-let ((short-func (intern func))
+             (full-caller (intern (which-function)))
+             (file-name (buffer-file-name))
+             (line-nb-str (number-to-string (line-number-at-pos)))
+             (location (concat file-name ":" line-nb-str))
+             (func-caller-key ; "callee <- class::caller" as key
+              (intern (concat (symbol-name short-func) " <- " (symbol-name full-caller)))))
+    (cg--initialize)
+    (let ((call-graph cg--default-instance))
+      ;; populate full-caller data
+      (cl-pushnew full-caller (map-elt (call-graph--callers call-graph) short-func (list)))
+      ;; populate location data
+      (cl-pushnew location (map-elt (call-graph--locations call-graph) func-caller-key (list))
+                  :test #'equal)
+      ;; todo: save newly added mapping into cache
+      (cg--save-caller-cache)
+      (message (format "Successfully added %s." (symbol-name func-caller-key))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Call-Graph Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -410,8 +437,7 @@ With prefix argument, discard cached data and re-generate reference data."
       (when cg-display-file-other-window
         (add-hook 'widget-move-hook 'cg-display-file-at-point))) ; restore display-file
     (setf (map-elt cg--caller-cache callee)
-          (remove caller filters))
-    (cg--save-caller-cache)))
+          (remove caller filters))))
 
 (defun cg-remove-region-callers ()
   "Within buffer <*call-graph*>, remove callers within active region."
@@ -434,7 +460,8 @@ With prefix argument, discard cached data and re-generate reference data."
   (interactive)
   (if (region-active-p)
       (cg-remove-region-callers)
-    (cg-remove-single-caller)))
+    (cg-remove-single-caller))
+  (cg--save-caller-cache))
 
 (defun cg-reset-caller-cache ()
   "Within buffer <*call-graph*>, reset caller cache for symbol at point.
