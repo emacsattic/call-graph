@@ -110,7 +110,8 @@ When FUNC with args, match number of args as well."
         (insert-file-contents-literally file-name)
         (goto-char (point-min))
         (while (re-search-forward "__attribute__[ \t\n]*(([[:alpha:]]+))" nil t)
-          (replace-match "__attribute__" t nil)) ; imenu failed to parse function with __attribute__ ((...)) as args
+          ; imenu failed to parse function with __attribute__ ((...)) as args
+          (replace-match "__attribute__" t nil))
         (goto-char (point-min))
         (forward-line (1- line-nb))
         (cg--setq-local-mode-hook-nil data-mode)
@@ -230,7 +231,8 @@ e.g: class::method(arg1, arg2) => class::method."
             ;; https://lists.gnu.org/r/emacs-pretest-bug/2007-02/msg00021.html
             "[^()\n]*"                             ; no parentheses before
             "[^" c-alnum "_:<>~]"                  ; match any non-identifier char
-            "\\(?2:\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)" ; 2ND-GROUP MATCH FUNCTION AND ITS ARGS WHILE 1ST-GROUP MATCH FUNCTION NAME
+            ; 2ND-GROUP MATCH FUNCTION AND ITS ARGS WHILE 1ST-GROUP MATCH FUNCTION NAME
+            "\\(?2:\\(?1:[" c-alpha "_][" c-alnum "_:<>~]*\\)"
             "\\([ \t\n]\\|\\\\\n\\)*("            ; see above, BUT the arg list
             "\\([ \t\n]\\|\\\\\n\\)*"             ; must not start
             "\\([^ \t\n(*]"                       ; with an asterisk or parentheses
