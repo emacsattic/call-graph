@@ -26,7 +26,7 @@
 
 ;;; Commentary:
 
-;; Library to generate call graph for c/c++ functions.
+;; Generate call graph for c/c++ functions.
 
 ;;; Install:
 
