@@ -26,7 +26,7 @@
 
 ;;; Commentary:
 
-;; Library to generate call graph for c/c++ functions.
+;; Generate call graph for c/c++ functions.
 
 ;;; Install:
 
@@ -50,6 +50,7 @@
 
 (require 'beacon)
 (require 'cg-global)
+(require 'desktop)
 (require 'hierarchy)
 (require 'ivy)
 (require 'tree-mode)
@@ -554,6 +555,8 @@ With prefix argument, discard whole caller cache."
   (when cg-display-file-other-window
     (add-hook 'widget-move-hook 'cg-display-file-at-point))
   (add-hook 'kill-emacs-hook 'cg--save-caller-cache)
+  (setq desktop-globals-to-save
+        (add-to-list 'desktop-globals-to-save 'cg-persist-caller-cache))
   (run-mode-hooks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
