@@ -5,9 +5,9 @@
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
 ;; Version: 0.1.2
-;; Keywords: programming, convenience
 ;; Created: 2018-01-07
-;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0") (beacon "1.3.3"))
+;; Keywords: programming, convenience
+;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -51,7 +51,6 @@
 
 ;;; Code:
 
-(require 'beacon)
 (require 'cg-global)
 (require 'desktop)
 (require 'hierarchy)
@@ -172,8 +171,7 @@
              (is-valid-file (file-exists-p file-name))
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
-    (with-no-warnings (goto-line line-nb)
-                      (beacon-blink))
+    (with-no-warnings (goto-line line-nb))
     (unless (member
              (buffer-name (window-buffer))
              (mapcar #'buffer-name cg--previous-buffers))
