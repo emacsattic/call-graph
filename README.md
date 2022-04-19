@@ -111,6 +111,7 @@ Lots more need to be improved.
 - [x] Cache searching result.
 - [x] Incremental searching.
 - [x] Manual removing wrong callers.
+- [x] Manual adding missing callers.
 - [x] Toggle show function args in call-graph.
 - [x] Save cache data to survive emacs restart.
 
