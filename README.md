@@ -95,15 +95,6 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
     (add-to-list 'cg-search-filters filter))
 ```
 
-Save caller-relations in .emacs.desktop
-
-```
-    (setq desktop-globals-to-save
-        (append '((cg-persist-caller-cache . 1000)
-                  tags-file-name
-                  tags-table-list)))
-```
-
 # Screenshots
 
 ![call-graph-demo-1.gif](img/call-graph-demo-1.gif)
@@ -122,6 +113,7 @@ Lots more need to be improved.
 - [x] Support manually remove wrong callers.
 - [x] Support persistence of call-graph cache data.
 - [x] Toggle show function args in call-graph.
+- [x] Save caller-relations in .emacs.desktop.
 
 # Contributing
 Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
