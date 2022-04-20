@@ -112,7 +112,7 @@ Lots more need to be improved.
 - [x] Incremental searching.
 - [x] Manual removing wrong callers.
 - [x] Manual adding missing callers.
-- [x] Toggle show function args in call-graph.
+- [x] Show function name and args in call-graph.
 - [x] Save cache data to survive emacs restart.
 
 # Contributing
