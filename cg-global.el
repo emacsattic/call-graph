@@ -89,7 +89,7 @@ e.g: class::method(arg1, arg2) => method."
 
 (defun cg--global-which-function ()
   "Return current function name and args based on point."
-  (let ((func (which-function)))
+  (when-let ((func (which-function)))
     (catch 'found
       (dolist (alist imenu--index-alist)
         (when-let ((full-func (car alist))
