@@ -39,8 +39,8 @@
   :type 'boolean
   :group 'call-graph)
 
-(defcustom cg-display-func-args nil
-  "Non-nil means display function together with its args in `call-graph'."
+(defcustom cg-display-func-args t
+  "Display function together with its args in `call-graph'."
   :type 'boolean
   :group 'call-graph)
 
