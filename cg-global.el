@@ -87,6 +87,16 @@ e.g: class::method(arg1, arg2) => method."
              (short-func (intern (car (last (split-string short-func-with-namespace "::"))))))
     short-func))
 
+(defun cg--global-which-function ()
+  "Return current function name and args based on point."
+  (let ((func (which-function)))
+    (catch 'found
+      (dolist (alist imenu--index-alist)
+        (when-let ((full-func (car alist))
+                   (match? (string-match func full-func))
+                   (found? (zerop match?)))
+          (throw 'found full-func))))))
+
 (defun cg--global-find-caller (reference func &optional data-mode)
   "Given a REFERENCE of FUNC for mode DATA-MODE.
 Return the caller as (caller . location).
@@ -135,8 +145,8 @@ When FUNC with args, match number of args as well."
               ;; TODO: check if func has args with default value
               ;; if not, we should use exact match here.
               (when (= nb-of-reference-args nb-of-func-args) ; check func-args matches references-args
-                (setq caller (which-function)))
-            (setq caller (which-function)))
+                (setq caller (cg--global-which-function)))
+            (setq caller (cg--global-which-function)))
           (unless cg-display-func-args
             (setq caller (cg--extract-namespace-and-method caller)))))
       (when caller
