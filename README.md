@@ -75,7 +75,10 @@ default is 2, the more the depth is, the longer it takes.
 ```
     (customize-set-variable 'cg-initial-max-depth 3)
 ```
-
+Ignored reference which has function name but no `(...)'
+```
+    (customize-set-variable 'cg-ignore-invalid-reference t)
+```
 Avoid truncating Imenu entries.
 
 ```
