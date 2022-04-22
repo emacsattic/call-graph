@@ -384,15 +384,6 @@ This works as a supplement, as `Global' sometimes fail to find caller."
   (save-selected-window
     (cg-goto-file-at-point)))
 
-(defun cg-at-point ()
-  "Within buffer <*call-graph*>, generate new `call-graph' for symbol at point."
-  (interactive)
-  (save-mark-and-excursion
-    (when (get-char-property (point) 'button)
-      (forward-char 4))
-    (when-let ((caller (get-text-property (point) 'caller-name)))
-      (call-graph caller))))
-
 (defun cg-select-caller-location ()
   "Select caller location as default location for function at point."
   (interactive)
@@ -484,22 +475,6 @@ With prefix argument, discard whole caller cache."
       (mapc 'kill-buffer-if-not-modified cg--created-buffers)
       (setq cg--created-buffers ()))))
 
-(defun cg-toggle-show-func-args ()
-  "Toggle show func-args for current `call-graph'."
-  (interactive)
-  (setq cg-display-func-args (not cg-display-func-args)
-        cg--default-instance nil)
-  (goto-char (point-min))
-  (cg-at-point))
-
-(defun cg-toggle-ignore-invalid-reference ()
-  "Toggle ignore-invalid-reference for current `call-graph'."
-  (interactive)
-  (setq cg-ignore-invalid-reference (not cg-ignore-invalid-reference)
-        cg--default-instance nil)
-  (goto-char (point-min))
-  (cg-at-point))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget Operations
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -548,12 +523,9 @@ With prefix argument, discard whole caller cache."
     (define-key map (kbd "+") 'cg-expand)
     (define-key map (kbd "_") 'cg-collapse)
     (define-key map (kbd "o") 'cg-goto-file-at-point)
-    (define-key map (kbd "g") 'cg-at-point)
     (define-key map (kbd "d") 'cg-remove-caller)
     (define-key map (kbd "l") 'cg-select-caller-location)
     (define-key map (kbd "r") 'cg-reset-caller-cache)
-    (define-key map (kbd "s") 'cg-toggle-show-func-args)
-    (define-key map (kbd "i") 'cg-toggle-ignore-invalid-reference)
     (define-key map (kbd "<RET>") 'cg-goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
