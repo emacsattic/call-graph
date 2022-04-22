@@ -55,12 +55,9 @@ You could bind it to <kbd>C-c g</kbd>.
     (define-key map (kbd "+") 'cg-expand)
     (define-key map (kbd "_") 'cg-collapse)
     (define-key map (kbd "o") 'cg-goto-file-at-point)
-    (define-key map (kbd "g") 'cg-at-point)
     (define-key map (kbd "d") 'cg-remove-caller)
     (define-key map (kbd "l") 'cg-select-caller-location)
     (define-key map (kbd "r") 'cg-reset-caller-cache)
-    (define-key map (kbd "s") 'cg-toggle-show-func-args)
-    (define-key map (kbd "i") 'cg-toggle-ignore-invalid-reference)
     (define-key map (kbd "<RET>") 'cg-goto-file-at-point)
 ```
 
@@ -69,20 +66,20 @@ You could bind it to <kbd>C-c g</kbd>.
 Customize the location of the GNU GLOBAL binary.
 
 ```
-    (setq cg-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
+    (customize-set-variable 'cg-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
 ```
 
 Specify the parse depth of the call-graph.
 default is 2, the more the depth is, the longer it takes.
 
 ```
-    (setq cg-initial-max-depth 3)
+    (customize-set-variable 'cg-initial-max-depth 3)
 ```
 
 Avoid truncating Imenu entries.
 
 ```
-    (setq imenu-max-item-length "Unlimited")
+    (customize-set-variable 'imenu-max-item-length "Unlimited")
 ```
 
 Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
