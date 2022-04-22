@@ -63,16 +63,16 @@ You could bind it to <kbd>C-c g</kbd>.
 
 # Customization
 
-Customize the location of the GNU GLOBAL binary.
+Customize the location of the GNU GLOBAL binary
 ```
     (customize-set-variable 'cg-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
 ```
-Specify the parse depth of the call-graph.
-default is 2, the more the depth is, the longer it takes.
+Specify the parse depth of the call-graph, 
+default is 2, the more the depth is, the longer it takes
 ```
     (customize-set-variable 'cg-initial-max-depth 3)
 ```
-Ignored reference which has function name but no `(...)'
+Ignore reference which has function name but no `(...)'
 ```
     (customize-set-variable 'cg-ignore-invalid-reference t)
 ```
@@ -80,11 +80,11 @@ Display function together with its args
 ```
     (customize-set-variable 'cg-display-func-args t)
 ```
-Avoid truncating Imenu entries.
+Avoid truncating Imenu entries
 ```
     (customize-set-variable 'imenu-max-item-length "Unlimited")
 ```
-Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/.
+Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/
 ```
     (dolist (filter '("grep -v \"Test/\""
                     "grep -v \"_SUITE/\""
