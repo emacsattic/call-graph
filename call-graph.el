@@ -501,17 +501,19 @@ With prefix argument, discard whole caller cache."
              (func (cg--widget-root)))
     (let ((origin-pos (point))
           (origin-caller-name
-           (get-text-property (point) 'caller-name nil)))
+           (get-text-property (point) 'caller-name)))
       (unless origin-caller-name
         (beginning-of-line)
         (while (null (setq origin-caller-name
-                           (get-text-property (point) 'caller-name nil)))
+                           (get-text-property (point) 'caller-name)))
           (forward-char)))
       (cg--create call-graph func depth)
       (goto-char origin-pos)
-      (while (null (equal (get-text-property (point) 'caller-name nil)
+      (while (null (equal (get-text-property (point) 'caller-name)
                           origin-caller-name))
-        (forward-char)))))
+        (forward-char))
+      (beginning-of-line)
+      (while (null (get-char-property (point) 'button)) (forward-char)))))
 
 (defun cg-collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
