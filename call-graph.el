@@ -4,7 +4,7 @@
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.1.2
+;; Version: 0.1.3
 ;; Created: 2018-01-07
 ;; Keywords: programming, convenience
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0"))
@@ -48,6 +48,8 @@
 ;; 0.1.2 Automatically save cg--caller-cache into desktop file.
 ;;       Add `cg-add-caller' to manually add callee <- caller.
 ;;       Refactor code
+;; 0.1.3 Set buffer unmodified.
+;;
 
 ;;; Code:
 
@@ -283,7 +285,8 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (when switch-buffer
       (switch-to-buffer-other-window hierarchy-buffer))
     (call-graph-mode)
-    (cg-widget-expand-all)))
+    (cg-widget-expand-all)
+    (set-buffer-modified-p nil)))
 
 (defun cg--create (call-graph func depth)
   "Generate CALL-GRAPH for FUNC, DEPTH is the depth of caller-map."
@@ -507,7 +510,8 @@ With prefix argument, discard whole caller cache."
      ((> level 0)
       (tree-mode-expand-level level))
      ((<= level 0)
-      (tree-mode-expand-level 1)))))
+      (tree-mode-expand-level 1)))
+    (set-buffer-modified-p nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mode
