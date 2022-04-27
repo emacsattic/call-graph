@@ -49,7 +49,7 @@
 ;;       Add `cg-add-caller' to manually add callee <- caller.
 ;;       Refactor code
 ;; 0.1.3 Set buffer unmodified.
-;;       Recover position after expanding.
+;;       Recover position after collapsing and expanding.
 
 ;;; Code:
 
@@ -518,13 +518,36 @@ With prefix argument, discard whole caller cache."
 (defun cg-collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
   (interactive "p")
-  (let ((level (- (cg--widget-depth) level)))
+  (let ((level (- (cg--widget-depth) level))
+        (origin-pos (point))
+        (origin-caller-name
+           (get-text-property (point) 'caller-name))
+        list-of-parents parent-caller-name)
+    (unless origin-caller-name
+      (beginning-of-line)
+      (while (null (setq origin-caller-name
+                         (get-text-property (point) 'caller-name)))
+        (forward-char)))
+    (cl-pushnew origin-caller-name list-of-parents)
+    (while (null (tree-mode-root-linep))
+      (tree-mode-goto-parent 1)
+      (while (null (setq parent-caller-name
+                         (get-text-property (point) 'caller-name)))
+        (forward-char))
+      (cl-pushnew parent-caller-name list-of-parents))
     (goto-char (point-min))
     (cond
      ((> level 0)
       (tree-mode-expand-level level))
      ((<= level 0)
       (tree-mode-expand-level 1)))
+    (goto-char origin-pos)
+    (end-of-line)
+    (while (null (member (get-text-property (point) 'caller-name)
+                         list-of-parents))
+      (forward-char -1))
+    (beginning-of-line)
+    (while (null (get-char-property (point) 'button)) (forward-char))
     (set-buffer-modified-p nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
