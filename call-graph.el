@@ -49,7 +49,7 @@
 ;;       Add `cg-add-caller' to manually add callee <- caller.
 ;;       Refactor code
 ;; 0.1.3 Set buffer unmodified.
-;;
+;;       Recover position after expanding.
 
 ;;; Code:
 
@@ -499,7 +499,19 @@ With prefix argument, discard whole caller cache."
   (when-let ((call-graph cg--default-instance)
              (depth (+ (cg--widget-depth) level))
              (func (cg--widget-root)))
-    (cg--create call-graph func depth)))
+    (let ((origin-pos (point))
+          (origin-caller-name
+           (get-text-property (point) 'caller-name nil)))
+      (unless origin-caller-name
+        (beginning-of-line)
+        (while (null (setq origin-caller-name
+                           (get-text-property (point) 'caller-name nil)))
+          (forward-char)))
+      (cg--create call-graph func depth)
+      (goto-char origin-pos)
+      (while (null (equal (get-text-property (point) 'caller-name nil)
+                          origin-caller-name))
+        (forward-char)))))
 
 (defun cg-collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
