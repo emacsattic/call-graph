@@ -82,6 +82,11 @@
 ;; Definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst cg--help-string
+  "(+)xpand,     (_)ollapse,     (p)revious, (n)ext,          (q)uit         (?)help
+(e)xpand-all, (c)ollapse-all, t(o)-file,  (d)elete-caller, (l)ocation-set (r)eset-cache"
+  "Help string for `Call-Graph'.")
+
 (defvar cg--caller-cache-alist nil
   "The alist form of `cg--caller-cache'.")
 
@@ -222,6 +227,13 @@
   (when cg--caller-cache
     (setq cg--caller-cache-alist
           (map-into cg--caller-cache 'list))))
+
+(defun cg-help ()
+  "Provide help for the `Call-Graph'."
+  (interactive)
+  (if (eq last-command 'cg-help)
+      (describe-mode)
+    (message cg--help-string)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Functions
@@ -567,6 +579,7 @@ With prefix argument, discard whole caller cache."
     (define-key map (kbd "d") 'cg-remove-caller)
     (define-key map (kbd "l") 'cg-select-caller-location)
     (define-key map (kbd "r") 'cg-reset-caller-cache)
+    (define-key map (kbd "?") 'cg-help)
     (define-key map (kbd "<RET>") 'cg-goto-file-at-point)
     map)
   "Keymap for `call-graph' major mode.")
