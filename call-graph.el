@@ -83,8 +83,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst cg--help-string
-  "(+)xpand,     (_)ollapse,     (p)revious, (n)ext,          (q)uit         (?)help
-(e)xpand-all, (c)ollapse-all, t(o)-file,  (d)elete-caller, (l)ocation-set (r)eset-cache"
+  "(+)xpand     (_)ollapse     (p)revious (n)ext          (q)uit         (?)help
+(e)xpand-all (c)ollapse-all t(o)-file  (d)elete-caller (l)ocation-set (r)eset-cache"
   "Help string for `Call-Graph'.")
 
 (defvar cg--caller-cache-alist nil
