@@ -50,6 +50,7 @@
 ;;       Refactor code
 ;; 0.1.3 Set buffer unmodified.
 ;;       Recover position after collapsing and expanding.
+;;       Highlight hotkeys in help message.
 
 ;;; Code:
 
@@ -233,7 +234,21 @@
   (interactive)
   (if (eq last-command 'cg-help)
       (describe-mode)
-    (message cg--help-string)))
+    (message (cg--colorize-message cg--help-string))))
+
+(defun cg--colorize-message (message)
+  "Colorize `MESSAGE'."
+  (with-temp-buffer
+    (insert message)
+    (let ((end (point-max))
+          key (color "light blue"))
+      (goto-char (point-min))
+      (while (and end (<= (point) end) (re-search-forward ")" nil 'move))
+        (when (setq key (char-after (1- (1- (point)))))
+          (delete-char -2)
+          (insert (propertize (string key) 'face `(:foreground ,color)))
+          (insert ")")))
+      (buffer-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core Functions
