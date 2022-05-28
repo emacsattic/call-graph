@@ -9,7 +9,7 @@ Generate call graph for c/c++ functions.
 
 # Where does this library come from?
 
-How many times have you had this feeling that
+How many times do you have this feeling that
 why can't we have this in emacs when you see
 the fancy function call hierarchy in "modern" IDEs?
 I hope one day, with this library, we won't have
