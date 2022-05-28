@@ -245,7 +245,7 @@
       (while (and end (<= (point) end) (re-search-forward ")" nil 'move))
         (when (setq key (char-after (1- (1- (point)))))
           (delete-char -2)
-          (insert (propertize (string key) 'face '(:foreground "#8ac6f2" :bold t))))
+          (insert (propertize (string key) 'face '((:foreground "#8ac6f2") bold))))
         (insert ")")))
     (buffer-string)))
 
