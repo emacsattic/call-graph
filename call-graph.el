@@ -306,7 +306,7 @@ CALCULATE-DEPTH is used to calculate actual depth."
            (lambda (tree-item _)
              (let ((caller (symbol-name tree-item))
                    (parent (or (hierarchy-parent cg--default-hierarchy tree-item) 'root-function)))
-               (insert (propertize caller 'caller-name tree-item 'callee-name parent))))
+               (insert (propertize caller 'caller-name tree-item 'callee-name parent 'intangible t))))
            (cg--get-buffer)))
     (when switch-buffer
       (switch-to-buffer-other-window hierarchy-buffer))
@@ -608,6 +608,7 @@ With prefix argument, discard whole caller cache."
         buffer-read-only t
         show-trailing-whitespace nil)
   (setq-local line-move-visual t)
+  (set (make-local-variable 'inhibit-point-motion-hooks) nil)
   (hack-dir-local-variables-non-file-buffer)
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
