@@ -399,12 +399,18 @@ This works as a supplement, as `Global' sometimes fail to find caller."
     (when (> (seq-length locations) 1)
       (message "Multiple locations for this function, select with `cg-select-caller-location'"))))
 
+(defun cg--forward-to-text ()
+  "Forward to text with callee-name."
+  (let ((is-end-of-line (= (point) (line-end-position))))
+    (while (not (get-text-property (point) 'callee-name))
+      (if is-end-of-line (backward-char 1)
+        (forward-char 1)))))
+
 (defun cg-goto-file-at-point ()
   "Go to the occurrence on the current line."
   (interactive)
   (save-mark-and-excursion
-    (when (get-char-property (point) 'button)
-      (forward-char 4))
+    (cg--forward-to-text)
     (cg-visit-file-at-point)))
 
 (defun cg-display-file-at-point ()
@@ -417,8 +423,7 @@ This works as a supplement, as `Global' sometimes fail to find caller."
   "Select caller location as default location for function at point."
   (interactive)
   (save-mark-and-excursion
-    (when (get-char-property (point) 'button)
-      (forward-char 4))
+    (cg--forward-to-text)
     (when-let ((call-graph cg--default-instance)
                (callee (get-text-property (point) 'callee-name))
                (caller (get-text-property (point) 'caller-name))
@@ -437,8 +442,7 @@ This works as a supplement, as `Global' sometimes fail to find caller."
 
 (defun cg-remove-single-caller ()
   "Within buffer <*call-graph*>, remove single caller at point."
-  (when (get-char-property (point) 'button)
-    (forward-char 4))
+  (cg--forward-to-text)
   (when-let ((call-graph cg--default-instance)
              (callee (get-text-property (point) 'callee-name))
              (caller (get-text-property (point) 'caller-name))
