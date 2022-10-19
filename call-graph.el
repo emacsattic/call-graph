@@ -404,7 +404,13 @@ This works as a supplement, as `Global' sometimes fail to find caller."
   (let ((is-end-of-line (= (point) (line-end-position))))
     (while (not (get-text-property (point) 'callee-name))
       (if is-end-of-line (backward-char 1)
-        (forward-char 1)))))
+        (forward-char)))))
+
+(defun cg--forward-to-button ()
+  "Forward to button."
+  (beginning-of-line)
+  (while (not (get-char-property (point) 'button))
+    (forward-char)))
 
 (defun cg-goto-file-at-point ()
   "Go to the occurrence on the current line."
@@ -474,7 +480,7 @@ This works as a supplement, as `Global' sometimes fail to find caller."
       (setq line-iterator (min rbeg-line rend-line))
       (while (<= line-iterator (max rbeg-line rend-line))
         (goto-char (point-min)) (forward-line (1- (min rbeg-line rend-line)))
-        (beginning-of-line) (while (not (get-char-property (point) 'button)) (forward-char))
+        (cg--forward-to-button)
         (cg-remove-single-caller)
         (setq line-iterator (1+ line-iterator))))))
 
@@ -542,8 +548,7 @@ With prefix argument, discard whole caller cache."
       (while (null (equal (get-text-property (point) 'caller-name)
                           origin-caller-name))
         (forward-char))
-      (beginning-of-line)
-      (while (null (get-char-property (point) 'button)) (forward-char)))))
+      (cg--forward-to-button))))
 
 (defun cg-collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
@@ -576,8 +581,7 @@ With prefix argument, discard whole caller cache."
     (while (null (member (get-text-property (point) 'caller-name)
                          list-of-parents))
       (forward-char -1))
-    (beginning-of-line)
-    (while (null (get-char-property (point) 'button)) (forward-char))
+    (cg--forward-to-button)
     (set-buffer-modified-p nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
