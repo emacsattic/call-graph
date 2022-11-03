@@ -39,7 +39,7 @@
   :type 'boolean
   :group 'call-graph)
 
-(defcustom cg-display-func-args t
+(defcustom cg-display-func-args nil
   "Display function together with its args in `call-graph'."
   :type 'boolean
   :group 'call-graph)
