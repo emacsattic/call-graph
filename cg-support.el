@@ -181,7 +181,9 @@ When FUNC with args, match number of args as well."
       (message command-output)
       (seq-doseq (reference (split-string command-output "\n" t))
         (when-let* ((full-location (concat git-repo-path "/" reference))
-                    (ignore (not (string-match root-location full-location))))
+                    ;; TODO: enable this when call-graph--root-location works well
+                    ;; (ignore (not (string-match root-location full-location)))
+                    )
           (cl-pushnew full-location command-result))))
     command-result))
 
@@ -207,8 +209,10 @@ When FUNC with args, match number of args as well."
              (line-nb (line-number-at-pos))
              (location (concat file-name ":" (number-to-string line-nb))))
     ;; save root function location
-    (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location)
-          (call-graph--root-location call-graph) location)))
+    (setf (map-elt (call-graph--locations call-graph) 'root-function) (list location))
+    ;; TODO: this line causes void-function error, fix it later
+    ;; (setf (call-graph--root-location call-graph) location)
+    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
