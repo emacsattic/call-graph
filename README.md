@@ -34,6 +34,11 @@ Or install from [melpa](https://melpa.org/#/call-graph).
 `call-graph` will recursively call `Global` to find caller of
 current function and eventually build up a `call-graph` tree.
 
+* `Git`
+
+`call-graph` will recursively call `git grep` to find caller of
+current function and eventually build up a `call-graph` tree.
+
 # Usage
 
 Place your cursor in the c/c++ function which you want to generate
