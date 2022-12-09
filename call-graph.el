@@ -4,7 +4,7 @@
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 0.1.3
+;; Version: 1.0.0
 ;; Created: 2018-01-07
 ;; Keywords: programming, convenience
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0"))
@@ -51,10 +51,11 @@
 ;; 0.1.3 Set buffer unmodified.
 ;;       Recover position after collapsing and expanding.
 ;;       Highlight hotkeys in help message.
+;; 1.0.0 Add Git (git grep) as search backend.
 
 ;;; Code:
 
-(require 'cg-global)
+(require 'cg-support)
 (require 'desktop)
 (require 'hierarchy)
 (require 'ivy)
@@ -122,7 +123,8 @@
                (:conc-name call-graph--))
   (callers (make-hash-table :test #'equal)) ; map func to its callers
   (locations (make-hash-table :test #'equal)) ; map func <- caller to its locations
-  (data-mode nil)) ; to which mode call-graph data belongs
+  (data-mode nil) ; to which mode call-graph data belongs
+  (root-location nil)) ; root-function location
 
 (defun cg-new ()
   "Create a `call-graph' and return it."
@@ -131,7 +133,7 @@
 (defun cg--add-callers (call-graph func callers)
   "In CALL-GRAPH, given FUNC, add CALLERS."
   (when (and call-graph func callers)
-    (let ((short-func (cg--global-extract-method-name func))) ; method only
+    (let ((short-func (cg--extract-method-name func))) ; method only
       (unless (map-elt (call-graph--callers call-graph) short-func)
         (seq-doseq (caller callers)
           (let* ((full-caller (car caller)) ; class::method
@@ -165,7 +167,7 @@
                'root-function ; special treatment for root-function
              (intern
               (concat
-               (symbol-name (cg--global-extract-method-name func)) " <- " (symbol-name caller))))))
+               (symbol-name (cg--extract-method-name func)) " <- " (symbol-name caller))))))
       (map-elt locations func-caller-key))))
 
 (defun cg--get-buffer ()
@@ -256,16 +258,18 @@
 (defun cg--search-callers (call-graph func depth)
   "In CALL-GRAPH, given FUNC, search callers deep to level DEPTH."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
-             (short-func (cg--global-extract-method-name func))
+             (short-func (cg--extract-method-name func))
              (data-mode (call-graph--data-mode call-graph)))
     (let ((caller-list (list))
           (callers (map-elt (call-graph--callers call-graph) short-func (list))))
 
       ;; callers not found.
       (unless callers
-        (seq-doseq (reference (cg--global-find-references short-func))
+        (seq-doseq (reference (if (and cg-search-backend (equal cg-search-backend "Git"))
+                                  (cg--git-find-references short-func (call-graph--root-location call-graph))
+                                (cg--global-find-references short-func)))
           (when-let ((caller-info
-                      (and reference (cg--global-find-caller reference func data-mode))))
+                      (and reference (cg--find-caller reference func data-mode))))
             (message (format "Search returns: %s" (symbol-name (car caller-info))))
             (push caller-info caller-list)))
         (cg--add-callers call-graph func caller-list)
@@ -280,7 +284,7 @@
 CALCULATE-DEPTH is used to calculate actual depth."
   (when-let ((next-depth (and (> depth 0) (1- depth)))
              (hierarchy cg--default-hierarchy)
-             (short-func (cg--global-extract-method-name func))
+             (short-func (cg--extract-method-name func))
              (callers
               (or (map-elt cg--caller-cache func (list)) ; load callers from cache
                   (map-elt (call-graph--callers call-graph) short-func (list)))))
@@ -351,7 +355,7 @@ With prefix argument, discard cached data and re-generate reference data."
           (selected-window (frame-selected-window)))
 
       (setq cg--previous-buffers (buffer-list))
-      (cg--global-handle-root-function call-graph)
+      (cg--handle-root-function call-graph)
 
       (save-mark-and-excursion
         (cg--create call-graph func cg-initial-max-depth)
@@ -435,7 +439,7 @@ This works as a supplement, as `Global' sometimes fail to find caller."
                (caller (get-text-property (point) 'caller-name))
                (func-caller-key
                 (intern
-                 (concat (symbol-name (cg--global-extract-method-name callee)) " <- " (symbol-name caller))))
+                 (concat (symbol-name (cg--extract-method-name callee)) " <- " (symbol-name caller))))
                (locations (cg--get-func-caller-location call-graph callee caller))
                (has-many (> (seq-length locations) 1)))
       (ivy-read "Caller Locations:" locations
@@ -452,7 +456,7 @@ This works as a supplement, as `Global' sometimes fail to find caller."
   (when-let ((call-graph cg--default-instance)
              (callee (get-text-property (point) 'callee-name))
              (caller (get-text-property (point) 'caller-name))
-             (short-func (cg--global-extract-method-name callee))
+             (short-func (cg--extract-method-name callee))
              (callers (map-elt (call-graph--callers call-graph) short-func (list)))
              (deep-copy-of-callers (seq-map #'identity callers))
              (filters
@@ -633,10 +637,10 @@ With prefix argument, discard whole caller cache."
 (cl-assert (not (cg--number-of-args "func")))
 (cl-assert (not (cg--number-of-args "class::func")))
 (cl-assert (= (cg--number-of-args "func(template<p1,p2>(a),[a,b](a,b){a,b,c;},(a,b))") 3))
-(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "method"))))
-(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "class::method"))))
-(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "class::method(arg1,arg2)"))))
-(cl-assert (eq (intern "method") (cg--global-extract-method-name (intern "class::method(class::variable1,class::variable2)"))))
+(cl-assert (eq (intern "method") (cg--extract-method-name (intern "method"))))
+(cl-assert (eq (intern "method") (cg--extract-method-name (intern "class::method"))))
+(cl-assert (eq (intern "method") (cg--extract-method-name (intern "class::method(arg1,arg2)"))))
+(cl-assert (eq (intern "method") (cg--extract-method-name (intern "class::method(class::variable1,class::variable2)"))))
 (cl-assert (equal "class::method" (cg--extract-namespace-and-method "class::method(class::variable1,class::variable2)")))
 
 
