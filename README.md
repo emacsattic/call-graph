@@ -104,7 +104,24 @@ Exclude UT/CT directories like /Dummy_SUITE/ /Dummy_Test/
                     "grep -v \"/TestPkg/\""))
     (add-to-list 'cg-search-filters filter))
 ```
-
+## Sample configuration
+```
+(progn
+  (require 'call-graph)
+  (global-set-key (kbd "C-c g") #'call-graph)
+  (customize-set-variable 'cg-path-to-global "/home/$username/private/gtags-6.6.3/bin/")
+  (customize-set-variable 'imenu-max-item-length "Unlimited")
+  (customize-set-variable 'cg-display-func-args t)
+  (dolist (filter '("grep -v \"Test/\""
+                    "grep -v \"Stub/\""
+                    "grep -v \"_SUITE/\""
+                    "grep -v \"/test-src/\""
+                    "grep -v \"/TestPkg/\""
+                    "grep -v \"/unittest/\""
+                    "grep -v \"/test_src/\""
+                    "grep -v \"/ct/\""))
+    (add-to-list 'cg-search-filters filter)))
+```
 # Screenshots
 
 ![call-graph-demo-1.gif](img/call-graph-demo-1.gif)
