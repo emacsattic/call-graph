@@ -166,19 +166,21 @@ When FUNC with args, match number of args as well."
 
 (defun cg--git-find-references (func root-location)
   "Given a FUNC and ROOT-LOCATION, return all references as a list."
-  (let ((command
-         (format "git --no-pager grep --full-name --no-color -nie %s"
-                 (shell-quote-argument (symbol-name func))))
-        (filter-separator " | ")
-        (git-repo-path (string-trim-right cg-path-to-git-repo "[ \t\n\r/]+"))
-        command-filter command-output command-result)
+  (let* ((git-repo-path (string-trim-right cg-path-to-git-repo "[ \t\n\r/]+"))
+         (command
+          (format "git -C %s --no-pager grep --full-name --no-color -nie %s"
+                  (shell-quote-argument git-repo-path)
+                  (shell-quote-argument (symbol-name func))))
+         (filter-separator " | ")
+         command-filter command-output command-result)
     (when (and (> (length cg-search-filters) 0)
                (setq command-filter
                      (mapconcat #'identity (delq nil cg-search-filters) filter-separator))
                (not (string= command-filter filter-separator)))
       (setq command (concat command filter-separator command-filter)))
-    (when (setq command-output (shell-command-to-string command))
-      (message command-output)
+    (when (setq command-output
+                (with-temp-message "Searching ..."
+                  (shell-command-to-string command)))
       (seq-doseq (reference (split-string command-output "\n" t))
         (when-let* ((full-location (concat git-repo-path "/" reference))
                     ;; TODO: enable this when call-graph--root-location works well
