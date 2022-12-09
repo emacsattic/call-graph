@@ -69,10 +69,17 @@ You could bind it to <kbd>C-c g</kbd>.
 
 # Customization
 
+## Backend configuration: Gnu Global
 Customize the location of the GNU GLOBAL binary
 ```
     (customize-set-variable 'cg-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
 ```
+## Backend configuration: Git
+```
+    (customize-set-variable 'cg-search-backend "Git")
+    (customize-set-variable 'cg-path-to-git-repo "/workspace/git/$username/repo/")
+```
+## Common configuration
 Specify the parse depth of the call-graph, 
 default is 2, the more the depth is, the longer it takes
 ```
