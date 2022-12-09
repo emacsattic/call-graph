@@ -28,7 +28,7 @@ Clone the repo, then in your Emacs init file:
 Or install from [melpa](https://melpa.org/#/call-graph).
 
 ## External dependency
-
+You could choose either Global or Git as search backend for call-graph to use.
 * `GNU Global`
 
 `call-graph` will recursively call `Global` to find caller of
@@ -70,7 +70,6 @@ You could bind it to <kbd>C-c g</kbd>.
 # Customization
 
 ## Backend configuration: Gnu Global
-Customize the location of the GNU GLOBAL binary
 ```
     (customize-set-variable 'cg-path-to-global "/home/huming/private/gtags-6.5.7/bin/")
 ```
