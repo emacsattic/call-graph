@@ -28,7 +28,7 @@ Clone the repo, then in your Emacs init file:
 Or install from [melpa](https://melpa.org/#/call-graph).
 
 ## External dependency
-You could choose either Global or Git as search backend for call-graph to use.
+You could choose either Global (default) or Git as search backend for call-graph to use.
 * `GNU Global`
 
 `call-graph` will recursively call `Global` to find caller of
@@ -124,6 +124,7 @@ Lots more need to be improved.
 - [x] Manual adding missing callers.
 - [x] Show function name and args in call-graph.
 - [x] Save cache data to survive emacs restart.
+- [x] Support multiple backends, e.g: gnu global, git.
 
 # Contributing
 Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
