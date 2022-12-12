@@ -168,7 +168,7 @@ When FUNC with args, match number of args as well."
   "Given a FUNC and ROOT-LOCATION, return all references as a list."
   (let* ((git-repo-path (string-trim-right cg-path-to-git-repo "[ \t\n\r/]+"))
          (command
-          (format "git -C %s --no-pager grep --full-name --no-color -nie %s"
+          (format "git -C %s --no-pager grep --full-name --no-color -ne %s"
                   (shell-quote-argument git-repo-path)
                   (shell-quote-argument (symbol-name func))))
          (filter-separator " | ")
