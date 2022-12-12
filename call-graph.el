@@ -324,7 +324,8 @@ CALCULATE-DEPTH is used to calculate actual depth."
     (setq cg--default-hierarchy (hierarchy-new))
     (cg--search-callers call-graph func depth)
     (cg--build-hierarchy call-graph func depth)
-    (cg--display-hierarchy)))
+    (cg--display-hierarchy)
+    (message "")))
 
 (defun cg--initialize ()
   "Initialize data for `call-graph'."
