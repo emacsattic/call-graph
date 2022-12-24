@@ -184,7 +184,8 @@
              (is-valid-file (file-exists-p file-name))
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
-    (with-no-warnings (goto-line line-nb))
+    (with-no-warnings (goto-line line-nb)
+                      (pulse-momentary-highlight-region (line-beginning-position) (line-end-position)))
     (unless (member
              (buffer-name (window-buffer))
              (mapcar #'buffer-name cg--previous-buffers))
