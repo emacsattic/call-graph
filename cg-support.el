@@ -1,6 +1,6 @@
 ;;; cg-global.el --- C++ support -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019-2022 Huming Chen
+;; Copyright (C) 2019-2023 Huming Chen
 
 ;; This file is not part of GNU Emacs.
 
