@@ -148,4 +148,4 @@ Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 # License
 
-See [LICENSE](LICENSE). Copyright (c) 2018-2022 Huming Chen <chenhuming@gmail.com>
+See [LICENSE](LICENSE). Copyright (c) 2018-2023 Huming Chen <chenhuming@gmail.com>
