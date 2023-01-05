@@ -1,6 +1,6 @@
 ;;; call-graph.el --- Generate call graph for c/c++ functions  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018-2022 by Huming Chen
+;; Copyright (C) 2018-2023 by Huming Chen
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
