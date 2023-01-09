@@ -56,7 +56,7 @@
   :group 'call-graph)
 
 (defcustom cg-search-backend nil
-  "Backend for call-graph to search with."
+  "Backend for `call-graph' to search with."
   :type '(choice (const :tag "Global")
                  (const :tag "Git"))
   :risky t
