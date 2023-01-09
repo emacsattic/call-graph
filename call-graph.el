@@ -227,7 +227,7 @@
     (if is-valid-tree depth (1- depth))))
 
 (defun cg--save-caller-cache ()
-  "Save caller cache by saving cg--caller-cache-alist in .emacs.desktop file."
+  "Save caller cache by saving `cg--caller-cache-alist' in .emacs.desktop file."
   (when cg--caller-cache
     (setq cg--caller-cache-alist
           (map-into cg--caller-cache 'list))))
