@@ -468,7 +468,8 @@ This works as a supplement, as `Global' sometimes fail to find caller."
         (progn
           (when cg-display-file-other-window
             (remove-hook 'widget-move-hook 'cg-display-file-at-point)) ; disable display-file temporarly
-          (tree-mode-delete-match (symbol-name caller)))
+          (tree-mode-delete-match (symbol-name caller))
+          (cg-display-file-at-point))
       (when cg-display-file-other-window
         (add-hook 'widget-move-hook 'cg-display-file-at-point))) ; restore display-file
     (setf (map-elt cg--caller-cache callee)
