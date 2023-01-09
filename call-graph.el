@@ -554,7 +554,8 @@ With prefix argument, discard whole caller cache."
       (while (null (equal (get-text-property (point) 'caller-name)
                           origin-caller-name))
         (forward-char))
-      (cg--forward-to-button))))
+      (cg--forward-to-button)
+      (cg-display-file-at-point))))
 
 (defun cg-collapse (&optional level)
   "Collapse `call-graph' by LEVEL."
@@ -588,6 +589,7 @@ With prefix argument, discard whole caller cache."
                          list-of-parents))
       (forward-char -1))
     (cg--forward-to-button)
+    (cg-display-file-at-point)
     (set-buffer-modified-p nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
