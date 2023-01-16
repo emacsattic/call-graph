@@ -353,17 +353,13 @@ With prefix argument, discard cached data and re-generate reference data."
   (deactivate-mark)
   (when func
     (cg--initialize)
-    (let ((call-graph cg--default-instance)
-          (window-configuration (current-window-configuration))
-          (selected-window (frame-selected-window)))
-
-      (setq cg--previous-buffers (buffer-list))
+    (let ((call-graph cg--default-instance))
+      (setq cg--previous-buffers (buffer-list)
+            cg--window-configuration (current-window-configuration)
+            cg--selected-window (frame-selected-window))
       (cg--handle-root-function call-graph)
-
       (save-mark-and-excursion
-        (cg--create call-graph func cg-initial-max-depth)
-        (setq cg--window-configuration window-configuration
-              cg--selected-window selected-window)))))
+        (cg--create call-graph func cg-initial-max-depth)))))
 
 ;;;###autoload
 (defun cg-add-caller (&optional func)
