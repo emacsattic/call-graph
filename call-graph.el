@@ -195,7 +195,7 @@
 
 (defun cg--widget-root ()
   "Return current tree root."
-  (save-mark-and-excursion
+  (save-excursion
     (goto-char (point-min))
     (let ((me (tree-mode-icon-current-line)))
       (when (and (not (tree-widget-leaf-node-icon-p me))
@@ -205,7 +205,7 @@
 
 (defun cg--widget-depth ()
   "Return current tree depth."
-  (save-mark-and-excursion
+  (save-excursion
     (goto-char (point-min))
     (let ((me (tree-mode-icon-current-line))
           (depth 0))
@@ -399,8 +399,6 @@ This works as a supplement, as `Global' sometimes fail to find caller."
              (locations (cg--get-func-caller-location call-graph callee caller))
              (location (car locations)))
     (cg--visit-function location)
-    (setq cg--window-configuration (current-window-configuration)
-          cg--selected-window (frame-selected-window)) ; update window configuration
     (when (> (seq-length locations) 1)
       (message "Multiple locations for this function, select with `cg-select-caller-location'"))))
 
@@ -420,20 +418,26 @@ This works as a supplement, as `Global' sometimes fail to find caller."
 (defun cg-goto-file-at-point ()
   "Go to the occurrence on the current line."
   (interactive)
-  (save-mark-and-excursion
-    (cg--forward-to-text)
-    (cg-visit-file-at-point)))
+  (cg--forward-to-text)
+  (cg-visit-file-at-point)
+  ;; update window and buffers
+  (setq cg--window-configuration (current-window-configuration)
+        cg--selected-window (frame-selected-window)
+        cg--created-buffers (delete (window-buffer) cg--created-buffers))
+  (add-to-list 'cg--previous-buffers (window-buffer)))
 
 (defun cg-display-file-at-point ()
   "Display in another window the occurrence the current line describes."
   (interactive)
   (save-selected-window
-    (cg-goto-file-at-point)))
+    (save-excursion
+      (cg--forward-to-text)
+      (cg-visit-file-at-point))))
 
 (defun cg-select-caller-location ()
   "Select caller location as default location for function at point."
   (interactive)
-  (save-mark-and-excursion
+  (save-excursion
     (cg--forward-to-text)
     (when-let ((call-graph cg--default-instance)
                (callee (get-text-property (point) 'callee-name))
@@ -512,13 +516,11 @@ With prefix argument, discard whole caller cache."
   (interactive)
   (when (eq major-mode 'call-graph-mode)
     (setq major-mode nil)
-    (let ((configuration cg--window-configuration)
-          (selected-window cg--selected-window))
-      (kill-this-buffer)
-      (set-window-configuration configuration)
-      (select-window selected-window)
-      (mapc 'kill-buffer-if-not-modified cg--created-buffers)
-      (setq cg--created-buffers ()))))
+    (kill-this-buffer)
+    (set-window-configuration cg--window-configuration)
+    (select-window cg--selected-window)
+    (mapc 'kill-buffer-if-not-modified cg--created-buffers)
+    (setq cg--created-buffers ())))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Widget Operations
