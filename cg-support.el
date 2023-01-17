@@ -143,7 +143,7 @@ When FUNC with args, match number of args as well."
         (which-function-mode t)
         ;; make sure reference contains a function call
         (when cg-ignore-invalid-reference
-          (save-mark-and-excursion
+          (save-excursion
             (end-of-line)
             (let ((end-of-line-pos (point)))
               (beginning-of-line)
@@ -325,7 +325,7 @@ e.g: class::method(arg1, arg2) => class::method."
 
 (defun cg--scan-func-args (func)
   "Scan FUNC and its args from current position, and return number of args."
-  (save-mark-and-excursion
+  (save-excursion
     (save-match-data
       (ignore-errors
         (let (func-beginning
