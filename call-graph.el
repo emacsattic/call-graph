@@ -53,6 +53,7 @@
 ;;       Highlight hotkeys in help message.
 ;; 1.0.0 Add Git (git grep) as search backend.
 ;; 1.0.1 Support only c++-mode for now.
+;;       Don't kill buffers which has been visited before when closing call-graph buffer.
 
 ;;; Code:
 
