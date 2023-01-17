@@ -109,7 +109,7 @@ e.g: class::method(arg1, arg2) => method."
                    (found? (zerop match?)))
           (throw 'found full-func))))))
 
-(defun cg--find-caller (reference func &optional data-mode)
+(defun cg--find-caller (reference func data-mode)
   "Given a REFERENCE of FUNC for mode DATA-MODE.
 Return the caller as (caller . location).
 When FUNC with args, match number of args as well."
