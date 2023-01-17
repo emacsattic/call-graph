@@ -4,7 +4,7 @@
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 1.0.0
+;; Version: 1.0.1
 ;; Created: 2018-01-07
 ;; Keywords: programming, convenience
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0"))
@@ -52,6 +52,7 @@
 ;;       Recover position after collapsing and expanding.
 ;;       Highlight hotkeys in help message.
 ;; 1.0.0 Add Git (git grep) as search backend.
+;; 1.0.1 Support only c++-mode for now.
 
 ;;; Code:
 
@@ -123,7 +124,7 @@
                (:conc-name call-graph--))
   (callers (make-hash-table :test #'equal)) ; map func to its callers
   (locations (make-hash-table :test #'equal)) ; map func <- caller to its locations
-  (data-mode nil) ; to which mode call-graph data belongs
+  (data-mode 'c++-mode) ; support c++-mode for now, consider c++-ts-mode in the future
   (root-location nil)) ; root-function location
 
 (defun cg-new ()
@@ -342,8 +343,9 @@ CALCULATE-DEPTH is used to calculate actual depth."
               cg--caller-cache-alist nil)
       (setq cg--caller-cache (make-hash-table :test #'equal))))
 
-  (unless (eq major-mode 'call-graph-mode) ; set mode of data
-    (setf (call-graph--data-mode cg--default-instance) major-mode)))
+  ;; (unless (eq major-mode 'call-graph-mode) ; set mode of data
+  ;;   (setf (call-graph--data-mode cg--default-instance) major-mode))
+  )
 
 ;;;###autoload
 (defun call-graph (&optional func)
