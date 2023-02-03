@@ -4,7 +4,7 @@
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 1.0.1
+;; Version: 1.0.2
 ;; Created: 2018-01-07
 ;; Keywords: programming, convenience
 ;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0"))
@@ -54,6 +54,7 @@
 ;; 1.0.0 Add Git (git grep) as search backend.
 ;; 1.0.1 Support only c++-mode for now.
 ;;       Don't kill buffers which has been visited before when closing call-graph buffer.
+;; 1.0.2 Replace mapc/mapcar with cl-loop to improve performance.
 
 ;;; Code:
 
@@ -191,7 +192,8 @@
                       (pulse-momentary-highlight-region (line-beginning-position) (line-end-position)))
     (unless (member
              (buffer-name (window-buffer))
-             (mapcar #'buffer-name cg--previous-buffers))
+             (cl-loop for buffer in cg--previous-buffers
+                      collect (buffer-name buffer)))
       (add-to-list 'cg--created-buffers (window-buffer)))))
 
 (defun cg--widget-root ()
@@ -520,7 +522,8 @@ With prefix argument, discard whole caller cache."
     (kill-this-buffer)
     (set-window-configuration cg--window-configuration)
     (select-window cg--selected-window)
-    (mapc 'kill-buffer-if-not-modified cg--created-buffers)
+    (cl-loop for buffer in cg--created-buffers
+             do (kill-buffer-if-not-modified buffer))
     (setq cg--created-buffers ())))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
