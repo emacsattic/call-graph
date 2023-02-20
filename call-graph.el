@@ -188,8 +188,7 @@
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
     (with-no-warnings (goto-char (point-min))
-                      (forward-line (1- line-nb))
-                      (pulse-momentary-highlight-region (line-beginning-position) (line-end-position)))
+                      (forward-line (1- line-nb)))
     (unless (member
              (buffer-name (window-buffer))
              (cl-loop for buffer in cg--previous-buffers
