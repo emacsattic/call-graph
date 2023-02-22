@@ -4,10 +4,10 @@
 
 ;; Author: Huming Chen <chenhuming@gmail.com>
 ;; URL: https://github.com/beacoder/call-graph
-;; Version: 1.0.2
+;; Version: 1.0.3
 ;; Created: 2018-01-07
 ;; Keywords: programming, convenience
-;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0"))
+;; Package-Requires: ((emacs "25.1") (hierarchy "0.7.0") (tree-mode "1.0.0") (ivy "0.10.0") (beacon "1.3.4"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -55,6 +55,7 @@
 ;; 1.0.1 Support only c++-mode for now.
 ;;       Don't kill buffers which has been visited before when closing call-graph buffer.
 ;; 1.0.2 Replace mapc/mapcar with cl-loop to improve performance.
+;; 1.0.3 Flash visited file location with beacon.
 
 ;;; Code:
 
@@ -63,6 +64,7 @@
 (require 'hierarchy)
 (require 'ivy)
 (require 'tree-mode)
+(require 'beacon)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Customizable
@@ -188,7 +190,8 @@
              (is-valid-nb (integerp line-nb)))
     (find-file-read-only-other-window file-name)
     (with-no-warnings (goto-char (point-min))
-                      (forward-line (1- line-nb)))
+                      (forward-line (1- line-nb))
+                      (beacon-blink))
     (unless (member
              (buffer-name (window-buffer))
              (cl-loop for buffer in cg--previous-buffers
