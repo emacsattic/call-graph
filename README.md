@@ -150,7 +150,7 @@ Yes, please do! See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 See [LICENSE](LICENSE). Copyright (c) 2018-2024 Huming Chen <chenhuming@gmail.com>
 
-## Donate
+# Donate
 
 If you think the it's helpful for you, please consider paying a cup of coffee
 for me. Thank you! :smile:
