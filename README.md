@@ -152,7 +152,7 @@ See [LICENSE](LICENSE). Copyright (c) 2018-2024 Huming Chen <chenhuming@gmail.co
 
 # Donate
 
-If you think the it's helpful for you, please consider paying a cup of coffee
+If you think that it's helpful for you, please consider paying a cup of coffee
 for me. Thank you! :smile:
 
 <img
